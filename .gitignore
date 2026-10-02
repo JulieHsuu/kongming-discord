@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+logs/
+fonts/
+state/
+test/out/
+test/tmpdata/
+.env
+.env.*
+!.env.example
+data/cases/
+data/transcripts/
+data/files/
+data/channels.json
+*.tmp
+*.zip
