@@ -1,0 +1,975 @@
+{
+  "generatedAt": "2026-10-05T09:03:00.690Z",
+  "total": 26,
+  "passed": 24,
+  "failed": 2,
+  "cases": [
+    {
+      "id": "P01",
+      "category": "greeting",
+      "prompt": "你好孔明，你可以幫我做什麼？",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "你好，我可以協作處理顧問案件的數位工作，包括：\n\n- 訪前研究、資料包與訪綱\n- 公司資料建檔、訪談紀錄與案件進度檢查\n- 科專／補助媒合、計畫書草稿與文件檢核\n- POC、ROI 試算、提案簡報、網頁 Demo、計畫短片\n- 商機研究、公開標案與官方聯絡窗口整理\n- 結案案例與知識庫整理\n\n你可以直接提供企業名稱、資料或交辦目標；對外使用與重要決策仍由顧問確認。你目前主要負責哪類案件或產業？",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P02",
+      "category": "prep",
+      "prompt": "下週要拜訪宏聯精密，請先幫我準備訪綱。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "prep"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "prep"
+      ],
+      "reply": "收到，我會先準備宏聯精密的訪前資料包與訪綱。請補公司官網／所在地、拜訪目的、已知需求與確切日期；若暫時沒有，我會先以公開資料研究並標示待確認事項。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密"
+        },
+        "tasks": [
+          {
+            "kind": "prep",
+            "program_id": null,
+            "focus": "準備宏聯精密訪前資料包與訪綱，盤點公開資訊、可能需求及待確認事項"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P03",
+      "category": "ingest",
+      "prompt": "這是宏聯精密的公司資料，請幫我建檔。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "ingest"
+      ],
+      "attachment": {
+        "name": "company-profile.txt",
+        "text": "公司：宏聯精密；地點：臺中市；產品：CNC 精密零件；員工：85 人；痛點：人工目檢漏檢。"
+      },
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "ingest"
+      ],
+      "reply": "收到，我會將宏聯精密資料建檔，並檢查案件欄位完整性；缺少的基本資料與後續訪談待確認事項會列在成果卡片中。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密",
+          "county": "臺中市",
+          "industry": "製造業",
+          "product": "CNC 精密零件",
+          "employees": 85,
+          "desc": "人工目檢有漏檢問題"
+        },
+        "tasks": [
+          {
+            "kind": "ingest",
+            "program_id": null,
+            "focus": "辨識宏聯精密公司資料、建立案件欄位並檢查完整性"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P04",
+      "category": "debrief",
+      "prompt": "這是今天的訪談紀錄，請整理並更新案件。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "debrief"
+      ],
+      "attachment": {
+        "name": "interview-notes.txt",
+        "text": "林協理表示目前有 6 名目檢人員，漏檢率約 3%，希望明年導入 AI 檢測。"
+      },
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "debrief"
+      ],
+      "reply": "收到。我會整理成訪談紀錄，更新 AI 導入需求、現況人力與漏檢率；但附件未提供**企業／案件名稱**，請補充後才能正確歸檔。另提醒：AI 視覺檢測通常先卡在影像樣本與瑕疵標註，後續應盤點資料量、瑕疵類型及產線環境；這是顧問實務經驗，仍需以客戶資料驗證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {
+          "needs": [
+            "ai"
+          ],
+          "desc": "現有6名目檢人員，漏檢率約3%，希望2027年導入AI檢測。"
+        },
+        "tasks": [
+          {
+            "kind": "debrief",
+            "program_id": null,
+            "focus": "整理訪談紀錄並更新AI目檢導入需求、現況人力及漏檢率"
+          }
+        ],
+        "todos": [
+          {
+            "text": "補充企業／案件名稱，以利訪談紀錄歸檔",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P05",
+      "category": "status",
+      "prompt": "宏聯精密這個案件目前還缺什麼資料？進度到哪裡？",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "status"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "status"
+      ],
+      "reply": "目前這個頻道與案件資料庫中**沒有宏聯精密的建檔、訪談或待辦紀錄**，所以進度與案件階段目前只能標為「待確認」。\n\n至少需補：\n- 公司基本資料與客戶窗口\n- 訪談／拜訪紀錄、需求與痛點\n- 預算、期程及可用資料現況\n- 已提方案、科專媒合或 POC 進度\n- 待辦、負責人與期限\n\n請提供現有公司資料或訪談紀錄，我再做完整缺件與進度盤點。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密"
+        },
+        "tasks": [
+          {
+            "kind": "status",
+            "program_id": null,
+            "focus": "盤點宏聯精密案件缺件、目前進度與案件階段"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P06",
+      "category": "match",
+      "prompt": "宏聯精密可以申請哪些政府科專或補助？",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "match"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "match"
+      ],
+      "reply": "我可以做科專媒合，但目前只有「宏聯精密」名稱，**無法判斷資格與建議計畫**。請先補公司全名或官網、主要產品、所在地、實收資本額、員工數、工廠登記、想解決的問題及預計投入經費；我會核對公開資料後，整理適合計畫、資格風險與 12 個月申請時程。計畫上限、受理狀態均會以最新公告查證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密"
+        },
+        "tasks": [
+          {
+            "kind": "match",
+            "program_id": null,
+            "focus": "盤點宏聯精密可申請的政府科專與補助，整理資格風險及12個月時程"
+          }
+        ],
+        "todos": [
+          {
+            "text": "補充公司全名或官網、主要產品、所在地、實收資本額、員工數、工廠登記、需求與預計投入經費",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P07",
+      "category": "poc",
+      "prompt": "針對人工目檢漏檢，規劃一個 6 週 AI 視覺檢測 POC。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "poc"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "poc"
+      ],
+      "reply": "收到。我會規劃 **6 週 AI 視覺檢測 POC**，聚焦降低人工目檢漏檢，包含資料盤點、標註、模型驗證、現場測試、KPI 與驗收門檻，成果另以卡片傳出。請補充公司／產品名稱、缺陷類型、現有影像量與目前漏檢率；這類案子依顧問實務通常卡在樣本與標註人力，需先用客戶資料驗證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {
+          "needs": [
+            "ai"
+          ],
+          "desc": "針對人工目檢漏檢，規劃6週AI視覺檢測POC"
+        },
+        "tasks": [
+          {
+            "kind": "poc",
+            "program_id": null,
+            "focus": "規劃6週AI視覺檢測POC，降低人工目檢漏檢並訂定KPI與驗收門檻"
+          }
+        ],
+        "todos": [
+          {
+            "text": "補充公司／產品名稱、缺陷類型、現有影像量與目前漏檢率",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P08",
+      "category": "deck",
+      "prompt": "幫宏聯精密做一份 AI 瑕疵檢測提案簡報。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "deck"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "deck"
+      ],
+      "reply": "收到。我會先為**宏聯精密**製作可編輯的 AI 瑕疵檢測提案簡報，涵蓋現況痛點、方案架構、資料需求、POC 規劃、KPI、導入時程與預期效益。公司產品、瑕疵類型、現行檢測流程、影像樣本、產線節拍及預算目前未知；若未補資料，我會以「待確認」占位，避免臆測。老顧問經驗提醒：這類案子通常先卡在影像品質、樣本量與標註人力，後續仍須用客戶實際資料驗證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密",
+          "needs": [
+            "ai"
+          ],
+          "desc": "規劃導入 AI 瑕疵檢測，產品、瑕疵類型、產線條件與影像資料待確認"
+        },
+        "tasks": [
+          {
+            "kind": "deck",
+            "program_id": null,
+            "focus": "製作宏聯精密 AI 瑕疵檢測提案簡報，含痛點、架構、資料需求、POC、KPI、時程與效益"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P09",
+      "category": "demo",
+      "prompt": "幫這個 AI 瑕疵檢測提案做一個可以操作的網頁 Demo。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "demo"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "demo"
+      ],
+      "reply": "我會製作可操作、手機可開的 AI 瑕疵檢測網頁 Demo，先以「上傳影像／模擬檢測／標示瑕疵／顯示判定與統計」為核心。請補 **產品與瑕疵類型、樣本圖片、判定規則、公司 Logo／配色**；若尚無資料，我可先用示意資料做通用版，結果需標明為模擬。老顧問經驗提醒：正式 POC 前要另盤點影像數量、標註品質與誤判容忍度。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {
+          "needs": [
+            "ai"
+          ],
+          "desc": "規劃 AI 瑕疵檢測提案之可操作網頁 Demo"
+        },
+        "tasks": [
+          {
+            "kind": "demo",
+            "program_id": null,
+            "focus": "製作 AI 瑕疵檢測可操作網頁 Demo，支援影像上傳、模擬檢測、瑕疵標示與結果統計"
+          }
+        ],
+        "todos": [
+          {
+            "text": "補充產品與瑕疵類型、樣本圖片、判定規則及品牌素材",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P10",
+      "category": "video",
+      "prompt": "幫這個計畫做一支 60 秒、有字幕的提案短片。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "video"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "video"
+      ],
+      "reply": "可以。我會製作 **60 秒提案短片**，包含動態圖文與字幕；目前尚未指定案件，請提供計畫名稱、計畫書或簡報，以及主要受眾與希望強調的 1–3 項重點。若需配樂、旁白或特定品牌風格，也請一併告知。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [
+          {
+            "kind": "video",
+            "program_id": null,
+            "focus": "製作 60 秒、有字幕的提案短片；待補計畫資料、受眾與溝通重點"
+          }
+        ],
+        "todos": [
+          {
+            "text": "提供計畫名稱、計畫書或簡報、目標受眾及重點訊息",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P11",
+      "category": "proposal",
+      "prompt": "請依 SBIR Phase 1 審查重點寫一份計畫書草稿。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "proposal"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "proposal"
+      ],
+      "reply": "收到。我會依 **SBIR Phase 1（小型企業創新研究計畫）**審查重點建立計畫書草稿；申請上限、受理狀態與最新格式目前無資料，須依當期公告或向計畫辦公室確認。請補公司名稱、創新題目、技術現況、目標市場、執行期程與預估經費；若尚未備齊，我可先產出待填版架構。建議至少預留四週撰寫與修訂。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [
+          {
+            "kind": "proposal",
+            "program_id": null,
+            "focus": "依 SBIR Phase 1 審查重點撰寫計畫書草稿，並檢核當期格式、資格、經費上限及受理狀態"
+          }
+        ],
+        "todos": [
+          {
+            "text": "提供公司名稱、創新題目、技術現況、目標市場、執行期程與預估經費",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          },
+          {
+            "text": "查核 SBIR Phase 1 當期公告、申請格式、資格、經費上限與受理狀態",
+            "owner": "孔明",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P12",
+      "category": "research",
+      "prompt": "查一下大成食品的公司背景、近期新聞與可能的數位轉型痛點。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "research"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "research"
+      ],
+      "reply": "我會整理公司背景、近期公開新聞、產業趨勢，並推測數位轉型痛點，附來源與待查證項目。先確認：你指的是臺灣「大成長城企業股份有限公司」，還是其他同名的大成食品公司？",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "大成食品",
+        "profile_updates": {},
+        "tasks": [
+          {
+            "kind": "research",
+            "program_id": null,
+            "focus": "查核大成食品的公司背景、近期新聞、產業趨勢及可能的數位轉型痛點，附公開來源"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P13",
+      "category": "roi",
+      "prompt": "幫客戶試算導入 AI 檢測的投資報酬率與回收期。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "roi"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "roi"
+      ],
+      "reply": "收到，我會建立可調整公式的 ROI 試算表，計算 AI 檢測的投入成本、持續成本、年度效益、投資報酬率與回收期。請補充客戶名稱、設備／系統與導入成本、每年維運費、目前檢測人力與工時、不良率／漏檢損失、預估改善幅度及補助金額；未知項目可先標「待確認」並做情境試算。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {
+          "needs": [
+            "ai"
+          ]
+        },
+        "tasks": [
+          {
+            "kind": "roi",
+            "program_id": null,
+            "focus": "試算客戶導入 AI 檢測的投資報酬率與回收期，建立公式可調整的 Excel"
+          }
+        ],
+        "todos": [
+          {
+            "text": "補充客戶名稱、導入與維運成本、現況檢測人力工時、不良或漏檢損失、預估改善幅度及補助金額",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P14",
+      "category": "scout",
+      "prompt": "推薦一家中部食品業、適合推 AI 檢測方案的廠商。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "scout"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "scout"
+      ],
+      "reply": "收到。我會鎖定**中部食品製造業**，依公開資料篩選具產線、品質檢驗需求與 AI 視覺檢測導入潛力的廠商，提出 1 家推薦對象、痛點假設、方案切入點及官方聯絡窗口；未經訪談的需求會標為推估。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [
+          {
+            "kind": "scout",
+            "program_id": null,
+            "focus": "推薦一家中部食品業、適合推動 AI 檢測方案的廠商，並研究公開聯絡窗口與提案切入點"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P15",
+      "category": "closeout",
+      "prompt": "宏聯精密已經結案，請整理成案例放進團隊知識庫。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "closeout"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "closeout"
+      ],
+      "reply": "收到，將「宏聯精密」案件標記為結案並整理成團隊知識案例。目前頻道沒有案件資料，請補上結案報告、訪談紀錄、提案成果與成效數據；缺少的內容我會標示「待補／待查證」，不自行推測。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": "宏聯精密結案案例",
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {},
+        "tasks": [
+          {
+            "kind": "closeout",
+            "program_id": null,
+            "focus": "整理宏聯精密結案資料、成果與經驗，建立團隊知識案例"
+          }
+        ],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": 4
+      }
+    },
+    {
+      "id": "P16",
+      "category": "industry-question",
+      "prompt": "製造業導入 AI 視覺檢測最常卡在哪些地方？",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "依**顧問實務經驗**，製造業導入 AI 視覺檢測最常卡在：\n\n- **資料不可用**：影像散落、規格不一，或只有 Excel／紙本紀錄，無法對應產品、批次與缺陷。\n- **缺陷樣本不足**：不良品本來就少，細分類後更不足；最大瓶頸通常是標註人力與判定一致性，不是模型。\n- **成像條件不穩**：光源、角度、震動、速度、髒污及產品反光變化，造成現場準確率低於實驗室。\n- **缺陷標準不清**：老師傅判斷不同，良／不良邊界未量化，模型也無法穩定學習。\n- **產線整合困難**：相機與 PLC、MES、剔除機構及節拍未先確認，模型準但無法上線。\n- **誤判成本未定義**：漏檢與誤殺的容許率、複判流程、停線責任不明。\n- **現場不願改流程**：操作與維護增加負擔，若沒說清楚第一線人員的好處，容易停在展示階段。\n\n建議 POC 前先盤點可用影像、缺陷類型與數量、節拍及驗收 KPI；以上是經驗判斷，仍須用客戶現場資料驗證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P17",
+      "category": "program-question",
+      "prompt": "SBIR Phase 1 的申請資格、補助上限與目前受理狀態是什麼？",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "**SBIR（小型企業創新研究計畫）Phase 1**\n- 申請資格：目前資料庫未提供，**待確認**\n- 補助上限：目前資料庫未提供，**待確認**\n- 受理狀態：目前資料庫未提供，**待確認**\n\n建議以 SBIR 官方網站最新公告與計畫辦公室答覆為準；資格、金額及受理期間可能隨年度調整。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P18",
+      "category": "profile",
+      "prompt": "我主要負責中部食品業與製造業 AI 檢測，回答請先講結論。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "收到。之後回覆你會**先講結論**，並優先聚焦中部食品業、製造業的 AI 檢測案件；涉及模型可行性時，我也會先提醒資料品質、樣本量與標註人力風險，並以客戶實際資料驗證。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": {
+          "style": "先講結論",
+          "focus": "AI 檢測",
+          "industries": [
+            "食品業",
+            "製造業"
+          ],
+          "regions": [
+            "中部"
+          ],
+          "targets": "中部食品業與製造業企業"
+        },
+        "feedback": {
+          "text": "回覆時先講結論，再補充依據與風險。",
+          "scope": "user"
+        },
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P19",
+      "category": "preference",
+      "prompt": "以後訪綱不要超過 15 題，而且每題都要寫訪談目的。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "收到。之後為你準備訪綱時，**最多 15 題，且每題都會標註訪談目的**。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": {
+          "text": "訪綱最多 15 題，且每題都要標註訪談目的。",
+          "scope": "user"
+        },
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P20",
+      "category": "todo",
+      "prompt": "請小明在 10 月 15 日前補齊宏聯精密近三年財報。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "已記錄待辦：請小明於 **2026-10-15 前**補齊宏聯精密近三年財報。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [
+          {
+            "text": "補齊宏聯精密近三年財報",
+            "owner": "顧問",
+            "due": "2026-10-15",
+            "assignee": "小明"
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P21",
+      "category": "decision",
+      "prompt": "宏聯精密總經費抓 300 萬元，先申請 SBIR Phase 1，定案。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "已記錄宏聯精密定案：**總經費 300 萬元，優先申請 SBIR Phase 1**。實際申請資格、補助上限與受理狀態目前資料不足，送件前仍需依當期公告確認。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密",
+          "budget": 300
+        },
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": "總經費定為 300 萬元，先申請 SBIR Phase 1",
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P22",
+      "category": "expert-match",
+      "prompt": "這個瑕疵檢測案院內可以找哪個單位協作？",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "目前資料庫沒有院內單位與專長目錄，**無法直接確認應找哪個單位**。建議先依需求分流：\n\n- AI 視覺辨識／模型：找電腦視覺、AI 應用團隊\n- 相機、光源、產線整合：找智慧製造或系統整合團隊\n- 資料盤點、標註與驗證：找資料工程／AI 導入團隊\n\n顧問實務提醒：瑕疵檢測通常先卡在影像品質、瑕疵樣本與標註人力，不是模型。請補充**產業、瑕疵類型、現有影像與產線設備**，再向院內窗口確認實際承接單位。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {
+          "needs": [
+            "ai"
+          ]
+        },
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P23",
+      "category": "sample-attachment",
+      "prompt": "依附件名冊，AI 瑕疵檢測應該找哪個院內單位？",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "attachmentFile": "../../samples/capabilities.csv",
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [],
+      "reply": "依附件《capabilities.csv》，**AI 瑕疵檢測優先找「AI 影像應用組」**，專長涵蓋工業影像辨識、瑕疵檢測模型與邊緣運算部署。\n\n但名冊內容均標示「範例」，窗口與分機不可直接使用，需向院內確認最新單位名稱及正式聯絡窗口。若案件也涉及資料平台或標註治理，再協同「數據治理組」。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": null,
+        "profile_updates": {},
+        "tasks": [],
+        "todos": [],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P24",
+      "category": "multi-task",
+      "prompt": "先研究宏聯精密，再準備訪綱、POC 與提案簡報。",
+      "expectedInScope": true,
+      "expectedTasks": [
+        "research",
+        "prep",
+        "poc",
+        "deck"
+      ],
+      "pass": true,
+      "failure": null,
+      "actualInScope": true,
+      "actualTasks": [
+        "research",
+        "prep",
+        "poc",
+        "deck"
+      ],
+      "reply": "收到。我會依序做 **宏聯精密企業研究 → 訪前資料包與訪綱 → 4–8 週 POC 規劃 → 可編輯提案簡報**，公開資料會附來源，未確認資訊會標示待查證。請補宏聯精密的**公司全名、官網或統編**，避免同名誤判；若有本次拜訪目標、既有需求或簡報格式，也請一併提供。提醒：POC 會先盤點資料來源、樣本量與標註人力，不預設客戶已有可用資料。",
+      "actions": {
+        "in_scope": true,
+        "kb_save": null,
+        "me": null,
+        "feedback": null,
+        "case_name": "宏聯精密",
+        "profile_updates": {
+          "name": "宏聯精密"
+        },
+        "tasks": [
+          {
+            "kind": "research",
+            "program_id": null,
+            "focus": "研究宏聯精密的公司背景、產品、新聞、同業、產業趨勢與可能痛點，附公開來源"
+          },
+          {
+            "kind": "prep",
+            "program_id": null,
+            "focus": "依研究結果準備訪前資料包與訪綱，列出待補資訊"
+          },
+          {
+            "kind": "poc",
+            "program_id": null,
+            "focus": "依可能痛點規劃 4–8 週 POC、資料需求與 KPI"
+          },
+          {
+            "kind": "deck",
+            "program_id": null,
+            "focus": "製作宏聯精密拜訪用可編輯提案簡報"
+          }
+        ],
+        "todos": [
+          {
+            "text": "提供宏聯精密公司全名、官網或統編",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          },
+          {
+            "text": "提供拜訪目標、既有需求及簡報格式（如有）",
+            "owner": "顧問",
+            "due": null,
+            "assignee": null
+          }
+        ],
+        "done_todos": [],
+        "decision": null,
+        "bd": null,
+        "stage": null
+      }
+    },
+    {
+      "id": "P25",
+      "category": "case-translation",
+      "prompt": "請把宏聯精密 SBIR 計畫書的中文摘要翻成英文，供這個案件送件使用。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "pass": false,
+      "failure": "hard_blocked",
+      "reply": "翻譯不在我的工作範圍；我是協助顧問案件與科專提案的數位員工。需要的話，我可以協助整理簡報重點或提案內容。"
+    },
+    {
+      "id": "P26",
+      "category": "case-translation",
+      "prompt": "請把這份 AI 瑕疵檢測客戶提案的一頁內容翻成英文。",
+      "expectedInScope": true,
+      "expectedTasks": [],
+      "attachment": {
+        "name": "proposal-page.txt",
+        "text": "本方案以 AI 視覺檢測協助宏聯精密降低人工目檢漏檢率，先進行六週概念驗證，再依驗證結果評估正式導入。"
+      },
+      "pass": false,
+      "failure": "hard_blocked",
+      "reply": "翻譯不在我的工作範圍；我是協助顧問案件與科專提案的數位員工。需要的話，我可以協助整理簡報重點或提案內容。"
+    }
+  ]
+}
