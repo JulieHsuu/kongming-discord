@@ -1,0 +1,25 @@
+{
+  "name": "kongming-discord",
+  "version": "2.0.0",
+  "description": "孔明 Kongming：資策會數位轉型研究院的顧問協作型數位員工（Discord 版）",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "fonts": "python3 scripts/extract-tc-fonts.py fonts",
+    "test": "node test/mock-run.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@napi-rs/canvas": "^1.0.10",
+    "discord.js": "^14.27.0",
+    "docx": "^9.8.1",
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.13.0",
+    "pptxgenjs": "^4.0.1",
+    "unpdf": "^1.8.1"
+  }
+}

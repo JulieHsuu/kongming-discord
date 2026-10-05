@@ -1,0 +1,7 @@
+node_modules
+fonts
+state
+test/out
+test/tmpdata
+.env
+*.zip

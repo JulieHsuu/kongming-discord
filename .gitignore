@@ -1,0 +1,14 @@
+node_modules/
+fonts/
+state/
+test/out/
+test/tmpdata/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+*.zip

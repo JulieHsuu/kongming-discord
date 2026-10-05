@@ -1,0 +1,12 @@
+services:
+  kongming:
+    build: .
+    container_name: kongming
+    env_file: .env
+    environment:
+      - KM_DATA_DIR=/app/state
+    volumes:
+      - ./state:/app/state        # 案件、對話紀錄、產出的檔案都存在這裡，請定期備份
+    ports:
+      - "8787:8787"               # Demo／影片連結用；建議前面放 HTTPS 反向代理
+    restart: unless-stopped
