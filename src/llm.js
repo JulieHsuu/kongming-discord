@@ -31,6 +31,7 @@ async function callAnthropic({ system, messages, tier, maxTokens, images, signal
 }
 
 async function callOpenAI({ system, messages, tier, maxTokens, images, signal, base, key, model }) {
+  const selectedModel = model || modelFor(tier);
   const msgs = [{ role: 'system', content: system }, ...messages.map(m => ({ role: m.role, content: m.content }))];
   if (images && images.length) {
     const last = msgs[msgs.length - 1];
@@ -39,7 +40,8 @@ async function callOpenAI({ system, messages, tier, maxTokens, images, signal, b
   const r = await fetch(`${base || cfg.openaiBase}/chat/completions`, {
     method: 'POST', signal,
     headers: { 'content-type': 'application/json', ...((key ?? cfg.openaiKey) ? { authorization: `Bearer ${key ?? cfg.openaiKey}` } : {}) },
-    body: JSON.stringify({ model: model || modelFor(tier), messages: msgs, max_tokens: maxTokens, temperature: 0.4 }),
+    body: JSON.stringify({ model: selectedModel, messages: msgs, max_tokens: maxTokens,
+      ...(/(?:^|\/)gpt-5(?:[.\-]|$)/i.test(selectedModel) ? {} : { temperature: 0.4 }) }),
   });
   if (!r.ok) throw new Error(`模型端點回應 ${r.status}：${(await r.text()).slice(0, 300)}`);
   const j = await r.json();
