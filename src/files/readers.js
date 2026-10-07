@@ -8,6 +8,12 @@ import { cfg } from '../config.js';
 const TEXT_EXT = ['txt', 'md', 'csv', 'tsv', 'json', 'html', 'htm', 'srt', 'vtt', 'log'];
 const IMG = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif' };
 
+export function attachmentName(a) {
+  const original = String(a.title || a.name || '附件').replace(/[\\/\x00-\x1f]/g, '_');
+  const ext = String(a.transportName || a.name || '').match(/\.[a-z0-9]{1,8}$/i)?.[0] || '';
+  return ext && !original.toLowerCase().endsWith(ext.toLowerCase()) ? original + ext : original;
+}
+
 export function kindOf(name, contentType = '') {
   const ext = (String(name).split('.').pop() || '').toLowerCase();
   if (IMG[ext] || /^image\//.test(contentType)) return 'image';
@@ -17,7 +23,8 @@ export function kindOf(name, contentType = '') {
 }
 
 /** 下載並讀出內容 → {name, kind:'text'|'image', text?, image?:{mediaType, base64}} */
-export async function readAttachment({ name, url, contentType, size }) {
+export async function readAttachment(a) {
+  const { url, contentType, size } = a, name = attachmentName(a);
   const k = kindOf(name, contentType);
   if (k === 'other') throw new KmError(`「${name}」的格式我還讀不了，請改成 PDF、Word、文字或圖片。`);
   const lim = (k === 'media' ? cfg.sttMaxMB : cfg.maxAttachMB);

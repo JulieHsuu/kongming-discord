@@ -3,12 +3,13 @@ import * as LLM from './llm.js';
 import { cfg } from './config.js';
 import * as store from './store.js';
 import { arr, cut, nowISO, uid, hhmm, isoDay, local, KmError, logger } from './util.js';
-import { timing } from './domain.js';
+import { timing, fmtVal } from './domain.js';
 import { FBY, STAGES, KZ, applyProfile, missingFields, profileText, pendText, sameName, matchAll, compactProgram, catalogLine, kbBrief, mentionedPrograms, normField } from './domain.js';
 import { TASKS, HDR, FIELD_RULES, caseContext, runTask, CTX } from './tasks.js';
 import { addPref, prefsAll, removePref, library } from './tasks2.js';
 import { nextSteps, evidenceText } from './consultant.js';
 import fs from 'node:fs';
+import { isSyntheticCase } from './domain.js';
 import { scoutPick, scoutCase, columnText, recordFeedback } from './scout.js';
 import { person, updatePerson, clearPerson, personBrief, noteAsk, speakerBrief } from './people.js';
 import * as gov from './governance.js';
@@ -22,13 +23,36 @@ import { redact, audit, rateOk } from './guard.js';
 import { createWork, updateWork, findWork, listWork, interruptWork, recordChange, undoChange, deleteUserWork } from './controls.js';
 
 const log = logger('brain');
+
+export function explicitEmployeeUpdate(text) {
+  if (/假設|如果|例如|不要|不用|取消|拒絕/.test(text)) return null;
+  const match = /員工(?:數|人數)\s*(?:更新|改|調整|變更)(?:為|成|到)\s*([\d,]+)\s*人/.exec(text);
+  if (!match) return null;
+  const count = Number(match[1].replace(/,/g, ''));
+  return Number.isSafeInteger(count) && count > 0 ? count : null;
+}
+
+export function currentEmployeeReply(c, text) {
+  if (!/^\s*(?:請問|請查詢|查詢)?\s*(?:目前|現在)?\s*(?:案件|公司)?\s*員工(?:數|人數)(?:是|為|有)?(?:多少|幾人|幾位)[？?。\s]*$/.test(text)) return null;
+  const value = c.profile?.employees;
+  return `目前「${c.name}」員工數為 ${fmtVal('employees', value)}。\n資料來源：${c.src?.employees || '未記錄'}。`;
+}
 const MARK = '<<<KM_ACTIONS>>>';
 const COLOR = 0x0A1E5E;
 export const channelAccess = (c, channelId) => !c || c.access?.mode !== 'restricted' || c.access.channelId === channelId;
+export function honorAttachmentChoice(m, c, atts, reply) {
+  const compact = value => String(value || '').replace(/\s/g, '');
+  return ['ingest', 'debrief'].includes(m.attachmentMode) && !!c && atts.some(x => x.kind === 'text' && compact(x.text).includes(compact(c.name))) && /未指定|沒有指定|未要求|僅讀|只讀|虛構測試/.test(reply) && !/不一致|不符|無關|誤傳|其他公司/.test(reply);
+}
+export function versionList(c) {
+  const versions = arr(c.versions).filter(v => /\.(docx|pptx|xlsx|pdf|png)$/i.test(v.name)).slice(-10).reverse();
+  return { content: `**${c.name}｜實際文件版本**\n` + (versions.map(v => `${v.id}｜${v.name}｜${v.at}`).join('\n') || '尚無已保存的文件版本。'), buttons: versions.slice(0, 5).map((v, i) => ({ id: `km:version:${c.id}:${v.id}`, label: `下載 ${i + 1}：${v.name}`.slice(0, 80), style: 'secondary' })) };
+}
 const TASK_KINDS = Object.keys(TASKS);
 // 先研究再寫訪綱：能上網、還沒研究過、拜訪準備時自動補上
 function expand(tasks, c) {
   const t = tasks.slice();
+  if (isSyntheticCase(c)) return t;
   if (t.some(x => x.kind === 'prep') && !t.some(x => x.kind === 'research') && c && (!c.research || !c.research.web || Date.now() - Date.parse(c.research.at) > 7 * 86400000) && LLM.canWebSearch() && (c.profile.name || c.name) !== '新案件') t.splice(t.findIndex(x => x.kind === 'prep'), 0, { kind: 'research', focus: '拜訪前的企業研究' });
   return t;
 }
@@ -285,6 +309,24 @@ export function parseRouter(out) {
 
 async function handleAddressed(m, io) {
   const st = chanState(m);
+  if (!arr(m.attachments).length) {
+    const current = store.getCase(st.caseId);
+    const answer = current && currentEmployeeReply(current, m.text);
+    if (answer) {
+      if (!channelAccess(current, m.channelId)) { await io.say('請到案件指定的 Discord 私密頻道操作。'); return; }
+      await io.say(answer); return;
+    }
+  }
+  if (!arr(m.attachments).length && /^\s*(?:\/孔明\s*)?(?:開啟|查看|查詢)?\s*[「『"]?(?:變更紀錄|修改紀錄)[」』"]?[。.!！\s]*$/.test(m.text)) {
+    const result = onCommand('changes', {}, { channelId: m.channelId, guildId: m.guildId, userId: m.author.id, userName: m.author.name, admin: m.admin === true, allowed: m.allowed });
+    await io.post(typeof result === 'string' ? { content: result } : result); return;
+  }
+  if (!arr(m.attachments).length && /^\s*(?:\/孔明\s*)?(?:文件版本|版本清單|查看文件版本)[。.!！\s]*$/.test(m.text)) {
+    const c = store.getCase(st.caseId);
+    if (!c) { await io.say('請先指定案件，再查看文件版本。'); return; }
+    if (!channelAccess(c, m.channelId)) { await io.say('請到案件指定的 Discord 私密頻道操作。'); return; }
+    await io.post(versionList(c)); return;
+  }
   if (cfg.attachmentMenu && arr(m.attachments).length && !m.attachmentMode && !/收進知識庫|存成 SOP/i.test(m.text)) {
     const id = uid(8), c = store.getCase(st.caseId);
     for (const [key, value] of attachmentChoices) if (Date.now() - value.at > 30 * 60000) attachmentChoices.delete(key);
@@ -324,11 +366,16 @@ async function handleAddressed(m, io) {
       return;
     }
     let out;
-    try { out = (await LLM.als.run({ private: !!c?.confidential, userId: m.author.id }, () => LLM.text({ label: 'router', system: persona(), messages: routerMessages(m, st, c, atts), maxTokens: 2500, signal: ctls.get(m.channelId).signal, images: atts.filter(a => a.kind === 'image').map(a => a.image).slice(0, 3) }))).text; }
+    const routerInput = m.attachmentMode ? { ...m, text: `${m.text}\n【使用者已按附件處理按鈕】明確指定 ${m.attachmentMode === 'ingest' ? '資料建檔至目前案件' : '整理訪談並更新目前案件'}。同名案件的虛構測試資料可建檔，來源須保留測試標示；其他公司內容仍應拒收。` } : m;
+    try { out = (await LLM.als.run({ private: !!c?.confidential, userId: m.author.id }, () => LLM.text({ label: 'router', system: persona(), messages: routerMessages(routerInput, st, c, atts), maxTokens: 2500, signal: ctls.get(m.channelId).signal, images: atts.filter(a => a.kind === 'image').map(a => a.image).slice(0, 3) }))).text; }
     catch (e) { stopTyping(); await io.post({ content: e && e.km ? e.message : '我這邊出了點問題，請再說一次。' }); return; }
     stopTyping();
     let { reply, actions: a0 } = parseRouter(out);
     const a = a0 || {};
+    if (honorAttachmentChoice(m, c, atts, reply)) {
+      a.in_scope = true; delete a.attachment_action;
+      reply = `已依你選擇的「${m.attachmentMode === 'ingest' ? '資料建檔' : '整理訪談'}」處理同名案件附件；虛構測試標示會保留。`;
+    }
     if (c && !atts.length && /圖片|示意圖|插圖|配圖|生圖/.test(m.text) && /生|加|補|放|需要|畫|製作/.test(m.text)) {
       a.in_scope = true; a.tasks = [{ kind: 'illustration', focus: m.text + (/咖啡|主管|董事長/.test(m.text) ? '' : '；企業高階主管咖啡會談情境') }];
       reply = '我會實際生成圖片並嵌入 Word，另附 PNG，保留原版；圖片模型失敗時會明確提示。';
@@ -364,6 +411,11 @@ async function handleAddressed(m, io) {
     const sc = arr(a.tasks).find(t => t && t.kind === 'scout');
     if (sc && a.in_scope !== false) { if (reply) await io.say(reply); const mm = /對象[:：]\s*([^，,；;。\s]+)/.exec(sc.focus || ''); await doScout(io, { target: mm ? mm[1] : '', focus: sc.focus || m.text, by: m.author.name, guildId: m.guildId, forUser: { id: m.author.id, name: m.author.name } }); return; }
     const tasks = expand(arr(a.tasks).filter(t => t && TASKS[t.kind]).slice(0, 5), c);
+    const employees = !atts.length && c && a.in_scope !== false ? explicitEmployeeUpdate(m.text) : null;
+    if (employees !== null) {
+      a.profile_updates = { ...a.profile_updates, employees };
+      a.todos = arr(a.todos).filter(t => !/確認.*員工/.test(t.text || ''));
+    }
     if (!atts.length && a.profile_updates && Object.keys(a.profile_updates).length && !/建檔|公司簡介|型錄|名片/.test(m.text)) {
       for (let i = tasks.length - 1; i >= 0; i--) if (tasks[i].kind === 'ingest') tasks.splice(i, 1);
     }
@@ -548,9 +600,19 @@ export function recordOwn(channelId, id, text) { store.appendTranscript(channelI
 
 export async function onButton(customId, user, io) {
   const [, act, a, b, yn] = customId.split(':');
+  const targetCase = store.getCase(a);
+  if (targetCase && targetCase.guildId !== (user.guildId || null)) return { text: '找不到可操作的案件：此案件不屬於目前的 Discord 伺服器。' };
   if (!channelAccess(store.getCase(a), io.channelId) || !channelAccess(store.getCase(store.getChannel(io.channelId).caseId), io.channelId)) return { text: '請到案件指定的 Discord 私密頻道操作。' };
   if (user.allowed === false) return { text: '你沒有使用孔明的權限。' };
   if (gov.killed()) return { text: '孔明目前已由管理員緊急停止。' };
+  if (act === 'version') {
+    const c = store.getCase(a);
+    if (!c || store.getChannel(io.channelId).caseId !== c.id || (c.guildId && c.guildId !== user.guildId)) return { text: '版本不屬於此頻道的目前案件。' };
+    const v = arr(c.versions).find(x => x.id === b), file = v && store.filePath(v.key, v.name);
+    if (!file) return { text: '這個版本不存在或檔案已過期。' };
+    await io.post({ content: `下載版本：${v.id}｜${v.name}`, files: [{ name: v.name, buffer: fs.readFileSync(file) }] });
+    return { text: '已傳送所選版本，原檔未修改。' };
+  }
   if (act === 'attachment') {
     const choice = attachmentChoices.get(a);
     if (!choice || Date.now() - choice.at > 30 * 60000) { attachmentChoices.delete(a); return { text: '附件選單已過期，請重新上傳。', clearButtons: true }; }
@@ -563,7 +625,7 @@ export async function onButton(customId, user, io) {
     return { text: `已選擇${b === 'transcript' ? '只轉錄／讀取，不更新案件' : b === 'debrief' ? '整理訪談並更新案件' : '資料建檔'}。`, clearButtons: true };
   }
   if (act === 'undo') {
-    if (user.admin === false) return { text: '復原修改需要顧問管理權限。' };
+    if (user.admin !== true) return { text: '復原修改需要顧問管理權限。' };
     const c = store.getCase(a);
     if (!c || c.guildId !== (user.guildId || null)) return { text: '找不到可操作的案件。' };
     const result = undoChange(c, b, user.name); store.saveCase(c);
@@ -615,7 +677,7 @@ export async function onButton(customId, user, io) {
     setTimeout(() => serial(io.channelId, async () => { for (const t of plan) { const r = await runFlow(t.kind, store.getCase(c.id) || c, { focus: t.focus }, io, { proactive: true, by: user.name }); if (r === 'stop') break; } await io.post({ content: '覺得這個方案可以去提嗎？', buttons: [{ id: `km:adopt:${c.id}`, label: '可以，建立案件', style: 'success' }, { id: `km:skip:${c.id}`, label: '不適合', style: 'secondary' }] }); }), 50);
     return { text: `${user.name} 已確認，我開始做提案簡報與 Demo。`, clearButtons: true };
   }
-  if ((act === 'ok' || act === 'pend') && user.admin === false) return { text: '這個確認需要顧問身分組，請洽管理員。' };
+  if ((act === 'ok' || act === 'pend') && user.admin !== true) return { text: '這個確認需要顧問身分組，請洽管理員。' };
   audit('button', { user: user.id, act, target: b || a });
   if (act === 'ok') {
     const c = store.getCase(a); const o = c && arr(c.outputs).find(x => x.id === b);
@@ -718,7 +780,7 @@ export function onCommand(sub, opts, ctx) {
       const versions = arr(c.versions).slice(-15).reverse();
       const selected = versions.find(v => v.id === opts.name);
       if (selected) { const path = store.filePath(selected.key, selected.name); return path ? { ephemeral: true, content: selected.id + '｜' + selected.at, files: [{ name: selected.name, buffer: fs.readFileSync(path) }] } : '此版本檔案已過期。'; }
-      return { ephemeral: true, content: versions.map(v => `${v.id}｜${v.name}｜${v.at}`).join('\n') || '新版啟用後尚無文件版本；請重新產出文件。' };
+      return { ephemeral: true, ...versionList(c) };
     }
     if (sub === 'evidence') {
       const text = evidenceText(c), query = String(opts.name || '').trim();

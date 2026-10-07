@@ -54,6 +54,7 @@ CTX.prefs = userId => {
 
 /* ---------- 企業研究 ---------- */
 EXTRA.research = async (c, p, ctl, ui) => {
+  if (c.synthetic === true || /^(功能測試公司|測試食品公司)$/.test(c.name)) return { summary: '這是虛構測試案件，不搜尋企業背景；僅使用已提供的測試資料。', files: [], sources: ['虛構測試資料'] };
   const name = c.profile.name || c.name;
   if (!name || name === '新案件') throw new KmError('請先告訴我企業名稱。');
   const web = LLM.canWebSearch();

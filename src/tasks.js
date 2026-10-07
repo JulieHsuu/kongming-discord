@@ -1,5 +1,6 @@
 // 孔明的十項職能：每一項把案件資料變成可以直接用的成果（文字、Word、PowerPoint、Demo、影片）
 import * as LLM from './llm.js';
+import { POC_RULES, protectPoc } from './poc-rules.js';
 import { cfg } from './config.js';
 import { arr, cut, isoDay, hhmm, nowISO, uid, num, safeName, KmError } from './util.js';
 import { FBY, FIELDS, STAGES, KZ, NEEDS, applyProfile, profileText, missingFields, completeness, fmtVal, pendText, matchAll, compactProgram, programFull, analysisFor, pickProgram, kzSrc, timing, normField } from './domain.js';
@@ -27,6 +28,7 @@ export const TASKS = {
 /* ---------- context ---------- */
 export const CTX = { similar: null, prefs: null };
 export function caseContext(c, o = {}) {
+  if (c.synthetic === true || /^(功能測試公司|測試食品公司)$/.test(c.name)) c = { ...c, research: null };
   const L = [`【企業資料】\n${profileText(c)}`];
   if (c.facts.length) L.push('【已建檔資訊】\n' + c.facts.slice(-14).map(f => `- ${f.label}：${f.value}${f.source ? `（${f.source}）` : ''}`).join('\n'));
   const iv = c.interviews[0];
@@ -79,7 +81,7 @@ ${ev.length ? '\n【可能適用的政府科專（資格初篩，供訪談時切
   if (arr(d.gaps).length) B.push({ h: '待補充資訊' }, { table: { headers: ['資訊', '為什麼重要'], rows: arr(d.gaps).map(g => [g.item, g.why]) } });
   const tools = [...arr(d.tool_inputs), ...arr(d.bring)]; if (tools.length) B.push({ h: '顧問工具所需資料與要帶的東西' }, { ul: tools });
   if (d.kezhuan_angle) B.push({ h: '科專切入建議' }, { p: d.kezhuan_angle });
-  if (c.research && arr(c.research.sources).length) B.push({ h: '訪前企業研究來源', muted: true }, { p: `研究時間：${c.research.at}`, muted: true }, { ul: c.research.sources.map(s => `${s.title}：${s.url}`) });
+  if (!(c.synthetic === true || /^(功能測試公司|測試食品公司)$/.test(c.name)) && c.research && arr(c.research.sources).length) B.push({ h: '訪前企業研究來源', muted: true }, { p: `研究時間：${c.research.at}`, muted: true }, { ul: c.research.sources.map(s => `${s.title}：${s.url}`) });
   const doc = await buildDocx(d.title || `${c.name} 訪前準備`, B);
   return {
     summary: `訪綱 ${arr(d.sections).length} 段、${q} 題；待補充資訊 ${arr(d.gaps).length} 項。`,
@@ -225,7 +227,7 @@ ${cands}
 /* ---------- 5b POC ---------- */
 async function poc(c, p, ctl) {
   const P = pickProgram(c, p.program_id);
-  const d = await LLM.json({ label: 'poc', signal: ctl.signal, system: HDR(), messages: [{ role: 'user', content: `同事交辦：「${p.focus || '規劃 POC'}」。請針對客戶痛點規劃一個 4–8 週可完成的概念驗證（POC），驗證技術可行性${P ? `，並作為申請「${P.name}」的前期成果與佐證` : ''}。資策會團隊會協助執行。
+  const generated = await LLM.json({ label: 'poc', signal: ctl.signal, system: HDR(), messages: [{ role: 'user', content: `同事交辦：「${p.focus || '規劃 POC'}」。請針對客戶痛點規劃一個 4–8 週可完成的概念驗證（POC），驗證技術可行性${P ? `，候選補助為「${P.name}」，資格與適配性待確認` : ''}。實際承接團隊待確認。${POC_RULES}
 
 ${caseContext(c, { chat: p.chat })}
 ${P ? `【計畫重點】${cut(P.summary, 200)}｜審查重點：${arr(P.review_focus).join('；')}｜常見 KPI：${arr(P.kpi_typical).join('、')}｜資策會角色：${cut(P.iii_role, 200)}\n${analysisFor(c, P.id)}` : ''}
@@ -233,15 +235,17 @@ ${P ? `【計畫重點】${cut(P.summary, 200)}｜審查重點：${arr(P.review_
 只回覆一個 JSON 物件：
 {"title":"POC 名稱","objective":"一句話目標","use_cases":["驗證情境"],"scope_in":["做什麼"],"scope_out":["不做什麼"],"data_needed":[{"item":"資料或設備","from":"企業提供或資策會準備"}],"architecture":["系統組成，一行一個元件"],"timeline":[{"week":"W1","task":"…","deliverable":"…"}],"success_metrics":[{"metric":"…","baseline":"現況或【待補】","target":"…"}],"kpi":[{"name":"計畫 KPI","target":"目標值","unit":"單位","basis":"計算依據"}],"team":[{"role":"…","side":"企業|資策會","effort":"人週"}],"cost_estimate":"概估與假設","risks":[{"risk":"…","mitigation":"…"}],"to_proposal":"POC 結果怎麼寫進計畫書（2–3 句）"}
 規則：週計畫 4–8 週；企業沒提供的數字用【待補：…】；kpi 4–6 項並附計算依據；不要承諾無法驗證的成效；繁體中文、句子簡短。` }] });
+  const d = protectPoc(generated, c);
   if (!d || !d.title) throw new KmError('POC 規劃格式不完整，請再試一次。');
   c.poc = { ...d, at: nowISO(), programId: P ? P.id : null };
-  const B = [{ p: d.objective }, P ? { p: `對應計畫：${P.name}`, muted: true } : null].filter(Boolean);
+  const B = [{ p: d.objective }, P ? { p: `候選計畫：${P.name}（資格與適配性待確認）`, muted: true } : null].filter(Boolean);
+  B.push({ h: '規劃前提與驗收規則' }, { ul: d.planning_notes });
   if (arr(d.use_cases).length) B.push({ h: '驗證情境' }, { ul: d.use_cases });
   if (arr(d.scope_in).length) B.push({ h: '做什麼' }, { ul: d.scope_in });
   if (arr(d.scope_out).length) B.push({ h: '不做什麼' }, { ul: d.scope_out });
   if (arr(d.data_needed).length) B.push({ h: '需要的資料與設備' }, { table: { headers: ['資料或設備', '來源'], rows: arr(d.data_needed).map(x => [x.item, x.from]) } });
   if (arr(d.architecture).length) B.push({ h: '系統組成' }, { ul: d.architecture });
-  if (arr(d.timeline).length) B.push({ h: '週計畫' }, { table: { headers: ['週', '工作', '產出'], rows: arr(d.timeline).map(t => [t.week, t.task, t.deliverable]) } });
+  if (arr(d.timeline).length) B.push({ h: '建議週計畫（待確認）' }, { table: { headers: ['週', '工作', '產出'], rows: arr(d.timeline).map(t => [t.week, t.task, t.deliverable]) } });
   if (arr(d.success_metrics).length) B.push({ h: '驗證指標' }, { table: { headers: ['指標', '現況', '目標'], rows: arr(d.success_metrics).map(m => [m.metric, m.baseline, m.target]) } });
   if (arr(d.kpi).length) B.push({ h: '計畫 KPI' }, { table: { headers: ['KPI', '目標', '計算依據'], rows: arr(d.kpi).map(k => [k.name, `${k.target ?? ''}${k.unit ? ' ' + k.unit : ''}`, k.basis]) } });
   if (arr(d.team).length) B.push({ h: '分工' }, { table: { headers: ['角色', '單位', '人力'], rows: arr(d.team).map(t => [t.role, t.side, t.effort]) } });

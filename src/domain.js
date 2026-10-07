@@ -10,6 +10,7 @@ export const INDUSTRIES = ['製造業', '商業服務業（零售、餐飲、物
 export const COUNTIES = ['臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市', '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣', '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣', '臺東縣', '澎湖縣', '金門縣', '連江縣'];
 const SOUTH = ['嘉義市', '嘉義縣', '臺南市', '高雄市', '屏東縣'];
 export const STAGES = ['訪前準備', '訪談進行', '訪後整理', '提案準備', '送件追蹤'];
+export const isSyntheticCase = c => c?.synthetic === true || /^(功能測試公司|測試食品公司)$/.test(c?.name || '');
 export const FIELDS = [
   { k: 'name', l: '企業名稱' }, { k: 'county', l: '縣市', opts: COUNTIES }, { k: 'industry', l: '產業', opts: INDUSTRIES },
   { k: 'product', l: '主要產品／服務' }, { k: 'capital', l: '實收資本額', unit: '萬元', n: true }, { k: 'employees', l: '員工數', unit: '人', n: true },

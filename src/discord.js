@@ -6,6 +6,7 @@ import {
   AttachmentBuilder, REST, Routes, SlashCommandBuilder, PermissionsBitField, ActivityType, MessageFlags,
 } from 'discord.js';
 import { cfg, ROOT } from './config.js';
+import { attachmentName } from './files/readers.js';
 import * as brain from './brain.js';
 import { cut, logger } from './util.js';
 import { startSchedule } from './schedule.js';
@@ -182,7 +183,7 @@ export async function startDiscord() {
         replyToMe,
         author: { id: msg.author.id, name: (msg.member && msg.member.displayName) || msg.author.globalName || msg.author.username },
         text: String(msg.content || '').replace(new RegExp(`<@!?${me.id}>`, 'g'), '').replace(/<@&\d+>/g, '').trim(),
-        attachments: [...msg.attachments.values()].map(a => ({ name: a.name, url: a.url, contentType: a.contentType || '', size: a.size })),
+        attachments: [...msg.attachments.values()].map(a => ({ name: attachmentName(a), transportName: a.name, url: a.url, contentType: a.contentType || '', size: a.size })),
         at: new Date(msg.createdTimestamp).toISOString(),
         allowed: !!roles && userAllowed(roles), admin: !!roles && userIsAdmin(roles),
       };

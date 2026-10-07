@@ -92,7 +92,7 @@ function makeIO(channelId) {
   };
   return io;
 }
-const user = (name) => ({ id: 'u-' + name, name });
+const user = (name) => ({ id: 'u-' + name, name, guildId: 'g1', allowed: true, admin: true });
 let mid = 0;
 const msg = (channelId, who, text, extra = {}) => ({ id: `d${++mid}`, channelId, guildId: 'g1', isDM: false, isOwnThread: false, mentionsMe: false, replyToMe: false, author: user(who), text, attachments: [], at: new Date().toISOString(), ...extra });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -201,7 +201,7 @@ const b4 = posts.length;
 await brain.onMessage(msg(CH, '外部訪客', '孔明，列出所有案件', { allowed: false }), makeIO(CH));
 ok(/沒有使用孔明的權限/.test(posts[b4] && posts[b4].content), '沒有身分組的人無法使用');
 const pendLeft = store.getCase(c.id).pending[0];
-if (pendLeft) { const rr = await brain.onButton(`km:pend:${c.id}:${pendLeft.id}:y`, { id: 'x', name: '實習生', allowed: true, admin: false }, makeIO(CH)); ok(/顧問身分組/.test(rr.text), '非顧問身分組不能按確認'); }
+if (pendLeft) { const rr = await brain.onButton(`km:pend:${c.id}:${pendLeft.id}:y`, { id: 'x', name: '實習生', guildId: 'g1', allowed: true, admin: false }, makeIO(CH)); ok(/顧問身分組/.test(rr.text), '非顧問身分組不能按確認'); }
 ok(/管理員/.test(brain.onCommand('mode', { mode: 'off' }, { channelId: CH, guildId: 'g1', admin: false })), '非管理員不能切換模式');
 ok(fs.readdirSync(path.join(DATA, 'audit')).length > 0, '稽核紀錄已寫入');
 
@@ -249,14 +249,14 @@ ok(colm && /115年度產業AI導入輔導委辦案/.test(colm.content) && /預�
 ok(colm && /王科長/.test(colm.content) && /\(02\)2754-1255/.test(colm.content), '列出標案上的公開承辦窗口與電話');
 const coiBtn = sp.flatMap(p => arr(p.buttons)).find(x => x.id && x.id.startsWith('km:coi:'));
 ok(!!coiBtn && !sp.some(p => /提案簡報/.test(JSON.stringify(p.embeds || ''))), '對政府單位提案前，先請管理員確認利益迴避');
-ok(/管理員/.test((await brain.onButton(coiBtn.id, { id: 'u9', name: '實習生', allowed: true, admin: false }, makeIO(CH))).text), '非管理員不能確認利益迴避');
-await brain.onButton(coiBtn.id, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO(CH));
+ok(/管理員/.test((await brain.onButton(coiBtn.id, { id: 'u9', name: '實習生', guildId: 'g1', allowed: true, admin: false }, makeIO(CH))).text), '非管理員不能確認利益迴避');
+await brain.onButton(coiBtn.id, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO(CH));
 for (let i = 0; i < 80 && !posts.slice(b5).some(p => arr(p.buttons).some(x => x.id && x.id.startsWith('km:adopt:'))); i++) await sleep(200);
 sp.push(...posts.slice(b5 + sp.length));
 ok(sp.some(p => /提案簡報/.test(JSON.stringify(p.embeds || ''))) && sp.some(p => /產品 Demo/.test(JSON.stringify(p.embeds || ''))), '確認後專欄附提案簡報與 Demo');
 const adoptBtn = sp.flatMap(p => arr(p.buttons)).find(x => x.id && x.id.startsWith('km:adopt:'));
 ok(!!adoptBtn, '附「可以，建立案件」按鈕');
-const ad = await brain.onButton(adoptBtn.id, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO(CH));
+const ad = await brain.onButton(adoptBtn.id, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO(CH));
 ok(/採用了/.test(ad.text), '顧問採用後建立案件');
 fs.writeFileSync(path.join(OUT, '商機專欄.txt'), colm.content);
 // 18) 不同顧問、不同推薦
@@ -326,7 +326,7 @@ const nRedo = await brain.resumeAfterRestart(async id => makeIO(id));
 const redoPost = posts.filter(p => p.channelId === 'c-r3').slice(-1)[0];
 ok(nRedo === 1 && /重新啟動/.test(redoPost.content) && redoPost.buttons.some(b => /km:redo/.test(b.id)), 'R3 重開機後主動詢問中斷的工作要不要重做');
 const callsBeforeRedo = calls.length;
-const rr3 = await brain.onButton(redoPost.buttons[0].id, { id: 'u-王顧問', name: '王顧問', allowed: true, admin: true }, makeIO('c-r3'));
+const rr3 = await brain.onButton(redoPost.buttons[0].id, { id: 'u-王顧問', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO('c-r3'));
 await sleep(400);
 ok(/重新做/.test(rr3.text) && calls.slice(callsBeforeRedo).includes('prep'), 'R3 按「重做」後自動接續');
 ok(gov.runningJobs().length === 0, 'R3 工作完成後從進行中清單移除');
@@ -385,10 +385,10 @@ const fu = W.followups();
 ok(fu.some(f => f.id === 'u1' && /還沒有聯繫紀錄/.test(f.text)), 'R8 採用 5 天沒聯繫，提醒採用的顧問');
 ok(W.followups().length === 0, 'R8 同一天不重複提醒');
 const bm = posts.length;
-await brain.onButton(`km:mail:${adCase.id}`, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO('c-bd'));
+await brain.onButton(`km:mail:${adCase.id}`, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO('c-bd'));
 for (let i = 0; i < 40 && !posts.slice(bm).some(p => arr(p.files).some(f => /開發信草稿/.test(f.name))); i++) await sleep(100);
 ok(posts.slice(bm).some(p => arr(p.files).some(f => /開發信草稿/.test(f.name))) && store.getCase(adCase.id).bd.stage === '開發信已備', 'R8 開發信草稿（信件、電話話術、推託回應），不代寄');
-await brain.onButton(`km:bd:${adCase.id}:已聯繫`, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO('c-bd'));
+await brain.onButton(`km:bd:${adCase.id}:已聯繫`, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO('c-bd'));
 ok(/已聯繫/.test(brain.onCommand('pipeline', {}, { channelId: 'c-bd', userId: 'u1' })), 'R8 /孔明 商機追蹤 看到推進狀態');
 
 // ===== R12：資安稽核與內控（獨立稽核的意見）=====
@@ -399,17 +399,17 @@ const amb = brain.onCommand('kbdel', { name: '報價' }, { channelId: CH, admin:
 ok(/好幾份符合/.test(amb) && kbm.kbDocs().length === 2, 'R12 知識庫移除名稱不完整時不會刪錯文件');
 ok(/已從知識庫移除《報價規範v2》/.test(brain.onCommand('kbdel', { name: '報價規範v2' }, { channelId: CH, admin: true })) && kbm.kbDocs().some(d => d.title === '報價規範'), 'R12 完整名稱才移除，且只移除那一份');
 ok(/管理員/.test(brain.onCommand('metrics', {}, { channelId: CH, admin: false })) && /管理員/.test(brain.onCommand('health', {}, { channelId: CH, admin: false })), 'R12 成效與運作狀況只給管理員');
-ok(/王顧問 負責/.test((await brain.onButton(`km:bd:${adCase.id}:未成案`, { id: 'u-別人', name: '別人', allowed: true, admin: false }, makeIO('c-bd'))).text) && !store.getCase(adCase.id).closedAt, 'R12 別人不能把同事採用的商機改成「不推了」');
+ok(/王顧問 負責/.test((await brain.onButton(`km:bd:${adCase.id}:未成案`, { id: 'u-別人', name: '別人', guildId: 'g1', allowed: true, admin: false }, makeIO('c-bd'))).text) && !store.getCase(adCase.id).closedAt, 'R12 別人不能把同事採用的商機改成「不推了」');
 gov.jobStart({ id: 'jnx', kind: 'prep', title: '訪前準備（訪綱）', caseId: hc.id, caseName: hc.name, channelId: 'c-r12', by: '王顧問', params: {} });
 await brain.resumeAfterRestart(async id => makeIO(id));
 const noBtn = posts.filter(p => p.channelId === 'c-r12').slice(-1)[0].buttons.find(b => /不用了/.test(b.label));
-ok(/不重做/.test((await brain.onButton(noBtn.id, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO('c-r12'))).text), 'R12 重開機詢問按「不用了」正確處理');
+ok(/不重做/.test((await brain.onButton(noBtn.id, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO('c-r12'))).text), 'R12 重開機詢問按「不用了」正確處理');
 const { pruneTranscripts } = await import('../src/store.js');
 store.appendTranscript('c-old', { id: 'old1', at: '2020-01-01T00:00:00Z', who: 'x', uid: 'u-x', text: '很舊的訊息' });
 pruneTranscripts(Date.now() - 14 * 86400000); store.appendTranscript('c-old', { id: 'new1', at: new Date().toISOString(), who: 'x', uid: 'u-x', text: '新訊息' });
 ok(!store.transcript('c-old').some(x => x.id === 'old1'), 'R12 過期對話連記憶體快取一起清掉，不會被寫回');
 const nOut = calls.filter(x => x === 'outreach').length;
-await brain.onButton(`km:mail:${adCase.id}`, { id: 'u1', name: '王顧問', allowed: true, admin: true }, makeIO('c-bd'));
+await brain.onButton(`km:mail:${adCase.id}`, { id: 'u1', name: '王顧問', guildId: 'g1', allowed: true, admin: true }, makeIO('c-bd'));
 for (let i = 0; i < 40 && calls.filter(x => x === 'outreach').length === nOut; i++) await sleep(100); await sleep(300);
 const outA = store.getCase(adCase.id);
 ok(outA && store.getCase(outA.id).bd.stage === '已聯繫', 'R12 重寫開發信不會把商機進度倒退');

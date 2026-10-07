@@ -5,6 +5,7 @@ test/out/
 test/tmpdata/
 test/consultant-data/
 test/live-image/
+test/live-web-research/
 .env
 .env.*
 !.env.example
