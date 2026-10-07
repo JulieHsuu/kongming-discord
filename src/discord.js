@@ -83,6 +83,13 @@ const ONOFF = [{ name: '開', value: 'on' }, { name: '關', value: 'off' }];
 export function commandDefs() {
   const main = new SlashCommandBuilder().setName('kongming').setDescription('孔明：顧問協作型數位員工').setNameLocalizations({ 'zh-TW': '孔明' })
     .addSubcommand(s => s.setName('help').setDescription('孔明會做什麼、怎麼交辦').setNameLocalizations({ 'zh-TW': '說明' }))
+    .addSubcommand(s => s.setName('access').setDescription('負責人設定案件的私密頻道限制').setNameLocalizations({ 'zh-TW': '案件權限' }).addStringOption(o => opt(o, 'mode', '模式', '私密頻道或團隊共用', true).addChoices({ name: '限制在此私密頻道', value: 'restricted' }, { name: '團隊共用', value: 'shared' })))
+    .addSubcommand(s => s.setName('versions').setDescription('文件版本與舊版下載').setNameLocalizations({ 'zh-TW': '文件版本' }).addStringOption(o => opt(o, 'name', '版本', '版本編號，不填則列出版本')))
+    .addSubcommand(s => s.setName('evidence').setDescription('查看原始來源與位置').setNameLocalizations({ 'zh-TW': '證據' }).addStringOption(o => opt(o, 'name', '關鍵字', '來源資料搜尋')))
+    .addSubcommand(s => s.setName('next').setDescription('下一步與提案前檢查').setNameLocalizations({ 'zh-TW': '下一步' }))
+    .addSubcommand(s => s.setName('handover').setDescription('產出案件交接包').setNameLocalizations({ 'zh-TW': '交接' }))
+    .addSubcommand(s => s.setName('work').setDescription('此頻道的工作狀態、取消與重試').setNameLocalizations({ 'zh-TW': '工作' }))
+    .addSubcommand(s => s.setName('changes').setDescription('案件資料修改紀錄與復原').setNameLocalizations({ 'zh-TW': '修改紀錄' }))
     .addSubcommand(s => s.setName('guide').setDescription('新同事導覽：三分鐘學會跟孔明共事').setNameLocalizations({ 'zh-TW': '新人導覽' }))
     .addSubcommand(s => s.setName('cases').setDescription('列出案件').setNameLocalizations({ 'zh-TW': '案件' }))
     .addSubcommand(s => s.setName('use').setDescription('切換這個頻道的案件').setNameLocalizations({ 'zh-TW': '切換' }).addStringOption(o => opt(o, 'name', '企業', '企業名稱', true)))
@@ -187,7 +194,7 @@ export async function startDiscord() {
     try {
       if (it.isButton() && it.customId.startsWith('km:')) {
         const roles = it.member ? [...it.member.roles.cache.keys()] : await rolesOf(it.user.id, it.guildId);
-        const user = { id: it.user.id, name: (it.member && it.member.displayName) || it.user.globalName || it.user.username, allowed: !!roles && userAllowed(roles), admin: !!roles && userIsAdmin(roles) };
+        const user = { id: it.user.id, guildId: it.guildId, name: (it.member && it.member.displayName) || it.user.globalName || it.user.username, allowed: !!roles && userAllowed(roles), admin: !!roles && userIsAdmin(roles) };
         const r = await brain.onButton(it.customId, user, makeIO(it.channel, client));
         if (r.clearButtons) {
           // 已處理的按鈕拿掉，但保留連結按鈕（打開 Demo、播放影片、下載大檔）
@@ -200,9 +207,9 @@ export async function startDiscord() {
       if (it.isChatInputCommand() && (it.commandName === 'kongming' || it.commandName === 'kongming-admin')) {
         const sub = it.options.getSubcommand();
         const roles = it.member ? [...it.member.roles.cache.keys()] : await rolesOf(it.user.id, it.guildId);
-        const r = brain.onCommand(sub, { name: it.options.getString('name'), mode: it.options.getString('mode'), forget: it.options.getString('forget'), subscribe: it.options.getString('subscribe'), deliver: it.options.getString('deliver'), coach: it.options.getString('coach'), role: it.options.getString('role') }, { channelId: it.channelId, guildId: it.guildId, userId: it.user.id, userName: (it.member && it.member.displayName) || it.user.username, io: makeIO(it.channel, client), allowed: !!roles && userAllowed(roles), admin: !!roles && userIsAdmin(roles), manager: !!roles && userIsManager(roles) });
+        const r = brain.onCommand(sub, { name: it.options.getString('name'), mode: it.options.getString('mode'), forget: it.options.getString('forget'), subscribe: it.options.getString('subscribe'), deliver: it.options.getString('deliver'), coach: it.options.getString('coach'), role: it.options.getString('role') }, { channelId: it.channelId, guildId: it.guildId, userId: it.user.id, userName: (it.member && it.member.displayName) || it.user.username, io: makeIO(it.channel, client), allowed: !!roles && userAllowed(roles), admin: !!roles && userIsAdmin(roles), manager: !!roles && userIsManager(roles), caseAdmin: !!it.memberPermissions?.has(PermissionsBitField.Flags.ManageGuild), privateChannel: !!it.guild && !it.channel.permissionsFor(it.guild.roles.everyone)?.has(PermissionsBitField.Flags.ViewChannel) });
         const o = typeof r === 'string' ? { content: r, ephemeral: EPHEMERAL.has(sub) } : (r || { content: '—' });
-        await it.reply({ content: cut(o.content, 2000), files: (o.files || []).map(f => new AttachmentBuilder(f.buffer, { name: f.name })), allowedMentions: { parse: [] }, ...(o.ephemeral ? { flags: MessageFlags.Ephemeral } : {}) });
+        await it.reply({ content: cut(o.content, 2000), components: rows(o.buttons || []), files: (o.files || []).map(f => new AttachmentBuilder(f.buffer, { name: f.name })), allowedMentions: { parse: [] }, ...(o.ephemeral ? { flags: MessageFlags.Ephemeral } : {}) });
       }
     } catch (e) { log.error('interaction', e); try { if (!it.replied) await it.reply({ content: '這個操作沒有成功，請再試一次。', flags: MessageFlags.Ephemeral }); } catch (e2) {} }
   });

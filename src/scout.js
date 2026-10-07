@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as LLM from './llm.js';
 import { cfg } from './config.js';
+import { filterResearchSources } from './web-research.js';
 import * as store from './store.js';
 import { arr, cut, isoDay, nowISO, parseJsonLoose, KmError, logger } from './util.js';
 import { KZ, applyProfile, stGroup, timing, catalogLine } from './domain.js';
@@ -43,7 +44,7 @@ export async function scoutPick({ target = '', focus = '', signal, forUser = nul
   const web = LLM.canWebSearch();
   let tz = [];
   if (target) { try { tz = await tendersFor(target); } catch (e) {} }
-  const r = await LLM.text({ label: 'scout', tier: 'heavy', maxTokens: 9000, signal, webSearch: web ? 10 : false, system: HDR(), messages: [{ role: 'user', content: `${target ? `顧問要你研究「${target}」，評估團隊可以怎麼去提案。` : '今天你要替顧問團隊寫「每日商機專欄」：自己挑一個團隊值得主動去推的對象（企業，或政府機關／法人／公協會等單位），研究清楚，提出一個可以去提案的方案方向。'}
+  const r = await LLM.text({ label: 'scout', tier: 'heavy', maxTokens: 9000, signal, webSearch: web ? 10 : false, webQuery: (target || focus || cfg.scoutFocus || '台灣企業數位轉型') + ' 官方公開資訊 近期動態 產業 AI 合作 商機 政府標案', system: HDR(), messages: [{ role: 'user', content: `${target ? `顧問要你研究「${target}」，評估團隊可以怎麼去提案。` : '今天你要替顧問團隊寫「每日商機專欄」：自己挑一個團隊值得主動去推的對象（企業，或政府機關／法人／公協會等單位），研究清楚，提出一個可以去提案的方案方向。'}
 
 【團隊定位】${cfg.org}：協助企業與單位做 AI 導入、數位轉型、數據應用，並協助申請政府科專與補助。${cfg.scoutFocus ? `\n【團隊這陣子想推的方向】${cfg.scoutFocus}` : ''}${focus ? `\n【這次的指定方向】${focus}` : ''}${uid ? '\n' + personBrief(uid, h) + '\n（以這位顧問的輪廓為主，團隊方向為輔；今天其他同事已經拿到的推薦不要重複）' : ''}
 【目前受理中或即將開放的政府計畫】${openKz || '—'}
@@ -67,7 +68,7 @@ ${web ? `請用網路搜尋做研究。${target ? '' : '挑對象的原則：近
 規則：${FIELD_RULES}；單位的 industry 填「其他」、capital 與 employees 留空；繁體中文。` }] });
   const d = parseJsonLoose(r.text);
   if (!d || !d.name || !d.solution) throw new KmError('今天的研究結果不完整，請稍後再請我推薦一次。');
-  d.sources = arr(r.sources).slice(0, 15); d.web = web;
+  d.sources = arr(r.sources).slice(0, 30); d.web = web; if (web && cfg.llmProvider === 'openai') filterResearchSources(d, d.sources);
   // 沒指定對象時，選好之後再補查標案
   if (!target && d.name) { try { tz = await tendersFor(d.name, arr(d.solution && d.solution.features).slice(0, 1)); } catch (e) {} }
   if (tz.length) d.tenders = [...tz.map(t => ({ date: t.date, title: t.title, budget: t.budget, deadline: t.deadline, contact: t.contact ? [t.contact.unit, t.contact.person, t.contact.phone, t.contact.email].filter(Boolean).join(' ') : '', source: t.link || '' })), ...arr(d.tenders)].slice(0, 8);

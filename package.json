@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node src/index.js",
     "fonts": "python3 scripts/extract-tc-fonts.py fonts",
-    "test": "node test/mock-run.js"
+    "test": "node test/mock-run.js",
+    "test:consultant": "node test/consultant-run.js",
+    "test:research": "node test/web-research-run.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -18,6 +20,7 @@
     "discord.js": "^14.27.0",
     "docx": "^9.8.1",
     "exceljs": "^4.4.0",
+    "jszip": "^3.10.2",
     "mammoth": "^1.13.0",
     "pptxgenjs": "^4.0.1",
     "unpdf": "^1.8.1"

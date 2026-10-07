@@ -18,6 +18,10 @@ export async function buildDocx(title, blocks, sub) {
     if (b.h) children.push(new D.Paragraph({ spacing: { before: 280, after: 100 }, children: [run(b.h, { size: 26, bold: true, color: '13328A' })] }));
     else if (b.h2) children.push(new D.Paragraph({ spacing: { before: 180, after: 80 }, children: [run(b.h2, { size: 23, bold: true, color: C.ink })] }));
     else if (b.p) children.push(new D.Paragraph({ spacing: { after: 100 }, children: [run(b.p, { color: b.muted ? C.muted : C.text })] }));
+    else if (b.image) {
+      children.push(new D.Paragraph({ children: [new D.ImageRun({ type: 'png', data: b.image.buffer, transformation: { width: b.image.width || 500, height: b.image.height || 333 } })] }));
+      if (b.image.caption) children.push(new D.Paragraph({ children: [run(b.image.caption, { size: 18, color: C.muted })] }));
+    }
     else if (b.ul) arr(b.ul).forEach(t => children.push(new D.Paragraph({ bullet: { level: 0 }, spacing: { after: 60 }, children: [run(t)] })));
     else if (b.ol) arr(b.ol).forEach((t, i) => children.push(new D.Paragraph({ indent: { left: 360, hanging: 360 }, spacing: { after: 60 }, children: [run(`${i + 1}. ${t}`)] })));
     else if (b.table && arr(b.table.rows).length) {

@@ -3,7 +3,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { cfg } from './config.js';
-import { filePath } from './store.js';
+import { filePath, fileIsRestricted } from './store.js';
 import { KZ } from './domain.js';
 import { logger } from './util.js';
 import { metrics, scoutDistribution, killState } from './governance.js';
@@ -27,6 +27,7 @@ export function startWeb() {
       const m = /^\/f\/([a-z0-9]+)\/([^/]+)$/.exec(u.pathname);
       if (!m) { res.writeHead(404); return res.end('not found'); }
       const name = decodeURIComponent(m[2]), p = filePath(m[1], name);
+      if (fileIsRestricted(m[1]) || name === '_owner.json') { res.writeHead(403); return res.end('請在案件的 Discord 私密頻道下載'); }
       if (!p) { res.writeHead(404); return res.end('not found'); }
       const ext = (name.split('.').pop() || '').toLowerCase(), st = fs.statSync(p);
       const h = { 'content-type': TYPES[ext] || 'application/octet-stream', 'x-content-type-options': 'nosniff', 'cache-control': 'private, max-age=86400', 'referrer-policy': 'no-referrer' };

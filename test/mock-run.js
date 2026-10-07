@@ -7,12 +7,13 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.join(HERE, 'tmpdata'), OUT = path.join(HERE, 'out');
 fs.rmSync(DATA, { recursive: true, force: true }); fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
-Object.assign(process.env, { KM_DATA_DIR: DATA, KM_OBSERVE_DELAY_SEC: '0', KM_OBSERVE_MIN_GAP_SEC: '0', ANTHROPIC_API_KEY: 'test', PORT: '8799', PUBLIC_BASE_URL: 'http://localhost:8799', KM_VIDEO_FPS: '12', KM_STT_BASE_URL: 'http://localhost:8798/v1', KM_STT_API_KEY: 'test', KM_STT_CHUNK_SEC: '2', KM_TENDER_API: 'http://localhost:8797/api', KM_DASHBOARD_TOKEN: 'dash' });
+Object.assign(process.env, { KM_ATTACHMENT_MENU: 'false', KM_DATA_DIR: DATA, KM_OBSERVE_DELAY_SEC: '0', KM_OBSERVE_MIN_GAP_SEC: '0', ANTHROPIC_API_KEY: 'test', PORT: '8799', PUBLIC_BASE_URL: 'http://localhost:8799', KM_VIDEO_FPS: '12', KM_STT_BASE_URL: 'http://localhost:8798/v1', KM_STT_API_KEY: 'test', KM_STT_CHUNK_SEC: '2', KM_TENDER_API: 'http://localhost:8797/api', KM_DASHBOARD_TOKEN: 'dash' });
 const tSrv = (await import('node:http')).createServer((req, res) => { res.writeHead(200, { 'content-type': 'application/json' }); if (req.url.startsWith('/api/searchbytitle')) return res.end(JSON.stringify({ records: [{ date: 20260915, brief: { type: '公開招標公告', title: '115年度產業AI導入輔導委辦案' }, job_number: 'A115001', unit_id: 'U1', unit_name: '經濟部產業發展署', url: '/index/case/U1/A115001/20260915/x' }] })); res.end(JSON.stringify({ records: [{ detail: { '機關資料:單位名稱': '智慧製造組', '機關資料:聯絡人': '王科長', '機關資料:聯絡電話': '(02)2754-1255', '機關資料:電子郵件信箱': 'ai@ida.gov.tw', '採購資料:預算金額': '3,500,000元', '領投標:截止投標': '115/10/20 17:00' } }] })); }).listen(8797);
 import http from 'node:http';
 import { execFileSync } from 'node:child_process';
 const sttHits = [];
-const sttSrv = http.createServer((req, res) => { let n = 0; req.on('data', d => { n += d.length; }); req.on('end', () => { sttHits.push(n); res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text: 'x', segments: [{ start: 0, text: '林協理說他們目檢六個人，漏檢率大概百分之三。' }, { start: 1.2, text: '希望明年導入AI檢測。' }] })); }); }).listen(8798);
+let sttFailureAfter = Infinity;
+const sttSrv = http.createServer((req, res) => { let n = 0; req.on('data', d => { n += d.length; }); req.on('end', () => { sttHits.push(n); if (sttHits.length > sttFailureAfter) { res.writeHead(503); res.end('{}'); return; } res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ text: 'x', segments: [{ start: 0, text: '林協理說他們目檢六個人，漏檢率大概百分之三。' }, { start: 1.2, text: '希望明年導入AI檢測。' }] })); }); }).listen(8798);
 
 const { setLLM } = await import('../src/llm.js');
 const { loadPrograms } = await import('../src/domain.js');
@@ -427,6 +428,107 @@ ok(/已定案[\s\S]*300 萬/.test(stt) && /時間軸/.test(stt), 'R10 /孔明 �
 ok(/三分鐘導覽/.test(brain.onCommand('guide', {}, { channelId: CH, userId: 'u-小明' })), 'R11 /孔明 新人導覽');
 const { commandDefs, commandChars } = await import('../src/discord.js');
 ok(commandDefs().every(d => commandChars(d) < 4000 && d.options.length <= 25), 'R11 兩個斜線指令都在 Discord 上限內：' + commandDefs().map(d => `${d.name} ${d.options.length} 項／${commandChars(d)} 字`).join('、'));
+
+// 回歸：路由拒收附件後，不得自動補建檔或改案件。
+setLLM({ text: async () => ({ text: `內容與案件不符，不整理、不寫入案件。\n${MARK}\n${JSON.stringify({ in_scope: true, attachment_action: 'skip', case_name: '不應建立的案件', profile_updates: { employees: 999 }, tasks: [{ kind: 'debrief' }] })}`, truncated: false }) });
+const rejectBefore = JSON.stringify(store.getCase(store.getChannel(CH).caseId));
+const rejectPosts = posts.length;
+await brain.onMessage(msg(CH, '王顧問', '孔明，請整理附件', { attachments: [{ name: 'company.docx', url: `http://localhost:8799/f/${saved.key}/company.docx`, size: saved.size }] }), makeIO(CH));
+ok(JSON.stringify(store.getCase(store.getChannel(CH).caseId)) === rejectBefore && !store.listCases('g1').some(x => x.name === '不應建立的案件') && !posts.slice(rejectPosts).some(p => arr(p.files).length), '拒收無關附件不改案件、不產生訪談文件');
+
+// 回歸：欄位更新雖被模型附加 ingest，仍只建立資料異動確認。
+setLLM({ text: async () => ({ text: `請確認員工數。\n${MARK}\n${JSON.stringify({ in_scope: true, profile_updates: { employees: 123 }, tasks: [{ kind: 'ingest' }] })}`, truncated: false }) });
+const updatePosts = posts.length;
+await brain.onMessage(msg(CH, '王顧問', '孔明，員工數更新為 123 人，請確認'), makeIO(CH));
+ok(store.getCase(store.getChannel(CH).caseId).pending.some(p => p.field === 'employees' && p.to === 123) && !posts.slice(updatePosts).some(p => /沒有收到要建檔|沒有完成/.test(p.content || '')), '單純欄位更新不執行額外空白建檔');
+
+const { runTask } = await import('../src/tasks.js');
+setLLM({ text: async () => J({ case_relevant: false, reason: '附件是私人論文討論，與案件無關' }) });
+const rejectedCase = store.getCase(store.getChannel(CH).caseId);
+const debriefBefore = JSON.stringify(rejectedCase);
+let rejectedDebrief = false;
+try { await runTask('debrief', rejectedCase, { notes: '老師與學生討論論文投稿' }, { signal: new AbortController().signal }); } catch (e) { rejectedDebrief = /與案件無關/.test(e.message); }
+ok(rejectedDebrief && JSON.stringify(rejectedCase) === debriefBefore, '訪談整理第二層檢核拒絕無關內容，案件保持原樣');
+
+// 新增功能：附件選單在使用者確認前不能下載、送模型或改案件。
+const { cfg } = await import('../src/config.js');
+cfg.attachmentMenu = true;
+let unexpectedCalls = 0;
+setLLM({ text: async () => { unexpectedCalls++; throw new Error('不應呼叫模型'); } });
+const menuStart = posts.length;
+await brain.onMessage(msg(CH, '王顧問', '孔明，這份附件請處理', { attachments: [{ name: 'company.docx', url: `http://localhost:8799/f/${saved.key}/company.docx`, size: saved.size }] }), makeIO(CH));
+const menu = posts.slice(menuStart).find(p => arr(p.buttons).some(b => b.id.startsWith('km:attachment:')));
+ok(!!menu && unexpectedCalls === 0, '附件先顯示案件與處理選單，不自動送模型');
+const readButton = menu.buttons.find(b => b.id.endsWith(':transcript'));
+ok(/上傳者/.test((await brain.onButton(readButton.id, { id: '別人', allowed: true }, makeIO(CH))).text), '其他人不能替上傳者選擇處理方式');
+const readBefore = JSON.stringify(store.getCase(store.getChannel(CH).caseId));
+await brain.onButton(readButton.id, { ...user('王顧問'), allowed: true }, makeIO(CH));
+for (let i = 0; i < 100 && !posts.slice(menuStart).some(p => /未寫入案件/.test(p.content || '')); i++) await sleep(20);
+ok(unexpectedCalls === 0 && JSON.stringify(store.getCase(store.getChannel(CH).caseId)) === readBefore && posts.slice(menuStart).some(p => /未寫入案件/.test(p.content || '')), '只讀取附件不送路由模型、不更新案件');
+cfg.attachmentMenu = false;
+
+const controls = await import('../src/controls.js');
+const undoCase = store.createCase('復原測試', 'g1', { employees: 85 });
+const firstChange = controls.recordChange(undoCase, 'employees', 85, 92, '同事訊息', '王顧問'); undoCase.profile.employees = 92;
+const nextChange = controls.recordChange(undoCase, 'employees', 92, 93, '同事訊息', '王顧問'); undoCase.profile.employees = 93; store.saveCase(undoCase);
+ok(/後續修改/.test(controls.undoChange(undoCase, firstChange.id, '王顧問')), '復原不能覆蓋後續欄位修改');
+ok(/已復原/.test(controls.undoChange(undoCase, nextChange.id, '王顧問')) && undoCase.profile.employees === 92, '復原資料並留下新的修改紀錄');
+ok(/已復原/.test(controls.undoChange(undoCase, firstChange.id, '王顧問')) && undoCase.profile.employees === 85, '可以逐步復原較早的修改');
+store.saveCase(undoCase);
+ok(/權限/.test((await brain.onButton(`km:undo:${undoCase.id}:${firstChange.id}`, { id: 'u1', guildId: 'g1', admin: false }, makeIO(CH))).text), '一般同事不能使用資料復原按鈕');
+ok(/可操作/.test((await brain.onButton(`km:undo:${undoCase.id}:${firstChange.id}`, { id: 'u1', guildId: 'g2', admin: true }, makeIO(CH))).text), '其他伺服器不能復原本伺服器案件');
+
+const privateJob = controls.createWork({ kind: 'prep', title: '私人工作', guildId: 'g1', channelId: CH, userId: 'owner', caseName: '案件' });
+ok(!controls.listWork('g1', 'someone', false).some(j => j.id === privateJob.id) && !controls.listWork('g2', 'owner', true).some(j => j.id === privateJob.id), '工作中心隔離不同使用者與伺服器');
+ok(/可操作/.test((await brain.onButton(`km:workcancel:${privateJob.id}`, { id: 'someone', guildId: 'g1', admin: false }, makeIO(CH))).text), '不能取消別人的工作');
+ok(/已要求取消/.test((await brain.onButton(`km:workcancel:${privateJob.id}`, { id: 'owner', guildId: 'g1', admin: false }, makeIO(CH))).text) && controls.findWork(privateJob.id).status === 'cancelled', '工作中心取消排隊中的工作');
+const interrupted = controls.createWork({ kind: 'prep', guildId: 'g1', userId: 'owner' }); controls.interruptWork();
+ok(controls.findWork(interrupted.id).status === 'interrupted', '重啟後未完成工作標記為中斷');
+
+const sttModule = await import('../src/files/stt.js');
+const longText = '第一段\n' + '長'.repeat(25000) + '\n最後一段';
+const split = sttModule.splitTranscript(longText);
+ok(split.join('') === longText && split.every(p => p.length <= 12000), '長逐字稿分段保留全部文字，包括超長單行');
+setLLM({ text: async () => ({ text: '摘要', truncated: false }) });
+const hitsBefore = sttHits.length;
+const resumedAudio = await sttModule.transcribe('meeting.m4a', fs.readFileSync(wav), { userId: 'u-王顧問' });
+ok(sttHits.length === hitsBefore && resumedAudio.coverage.resumed === resumedAudio.coverage.total && resumedAudio.coverage.completed === resumedAudio.coverage.total, '錄音重試沿用已成功段落，並回報所有段落完成');
+ok(resumedAudio.text.includes('[00:00:00]') && resumedAudio.text.includes('林協理'), '校對回覆過短或遺失時間碼時保留原始逐字稿');
+
+// 真正的執行中取消與重新執行（仍使用假模型）。
+setLLM({ text: async ({ label, signal }) => {
+  if (label === 'router') return { text: `開始測試\n${MARK}\n{"in_scope":true,"tasks":[{"kind":"prep"}]}`, truncated: false };
+  if (label === 'prep') return new Promise((resolve, reject) => { signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })), { once: true }); });
+  return J({});
+} });
+const workBefore = new Set(controls.listWork('g1', 'u-王顧問', true).map(j => j.id));
+const pendingRun = brain.onMessage(msg(CH, '王顧問', '孔明，測試取消工作'), makeIO(CH));
+let runningWork;
+for (let i = 0; i < 100; i++) { runningWork = controls.listWork('g1', 'u-王顧問', true).find(j => !workBefore.has(j.id) && j.status === 'running'); if (runningWork) break; await sleep(10); }
+ok(!!runningWork, '工作中心記錄實際處理中的任務');
+await brain.onButton(`km:workcancel:${runningWork.id}`, { ...user('王顧問'), guildId: 'g1', admin: false }, makeIO(CH));
+await pendingRun;
+ok(controls.findWork(runningWork.id).status === 'cancelled', '取消按鈕中止執行中的模型請求');
+setLLM({ text: async ({ label }) => label === 'prep' ? J(PREP) : J({}) });
+const retryResult = await brain.onButton(`km:workretry:${runningWork.id}`, { ...user('王顧問'), guildId: 'g1', admin: false }, makeIO(CH));
+let retryWork;
+for (let i = 0; i < 100; i++) { retryWork = controls.listWork('g1', 'u-王顧問', true).find(j => !workBefore.has(j.id) && j.id !== runningWork.id && j.status === 'completed'); if (retryWork) break; await sleep(20); }
+ok(/重新執行/.test(retryResult.text) && !!retryWork, '工作中心重試失敗或取消任務，產生新完成紀錄');
+
+// 語音端點在第二段失敗，重試只呼叫未成功段落。
+const retryWav = path.join(OUT, 'resume.wav');
+execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=600:sample_rate=16000', '-t', '5', retryWav]);
+const partialBefore = sttHits.length; sttFailureAfter = partialBefore + 1;
+let partialFailed = false;
+try { await sttModule.transcribe('resume.wav', fs.readFileSync(retryWav), { userId: 'resume-user' }); } catch (e) { partialFailed = /第 2/.test(e.message); }
+ok(partialFailed, '語音第二段失敗時標出段號，不宣稱完成');
+sttFailureAfter = Infinity;
+setLLM({ text: async () => ({ text: '摘要', truncated: false }) });
+const retryHits = sttHits.length;
+const recovered = await sttModule.transcribe('resume.wav', fs.readFileSync(retryWav), { userId: 'resume-user' });
+ok(recovered.coverage.resumed === 1 && sttHits.length - retryHits === recovered.coverage.total - 1, '失敗錄音重試不重送已成功的第一段');
+sttModule.deleteTranscriptionCache('resume-user');
+ok(!fs.readdirSync(path.join(DATA, 'stt-checkpoints')).some(f => JSON.parse(fs.readFileSync(path.join(DATA, 'stt-checkpoints', f))).userId === 'resume-user'), '本人資料刪除會移除逐字稿重試快取');
 
 tSrv.close();
 

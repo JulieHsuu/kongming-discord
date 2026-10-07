@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { cfg, ROOT } from './config.js';
+import { recordChange } from './controls.js';
 import { arr, cut, isEmpty, num, pad, wan, nowISO, uid, parseD, todayD, daysLeft, md2 } from './util.js';
 
 export const NEEDS = { rd: '研發新產品／技術', ai: '導入 AI 應用', dx: '數位轉型／營運效率', svc: '服務創新／新模式', green: '淨零減碳／節能', intl: '國際合作／海外', acad: '產學合作', invest: '募資／政府投資', tax: '研發節稅' };
@@ -53,8 +54,8 @@ export function applyProfile(c, upd, source) {
     const v = normField(k, raw);
     if (v == null || (Array.isArray(v) && !v.length)) continue;
     const old = c.profile[k];
-    if (f.list) { const merged = [...new Set([...arr(old), ...v])]; if (merged.length !== arr(old).length) { c.profile[k] = merged; c.src[k] = source; applied.push(f.l); } continue; }
-    if (isEmpty(old)) { c.profile[k] = v; c.src[k] = source; applied.push(f.l); continue; }
+    if (f.list) { const merged = [...new Set([...arr(old), ...v])]; if (merged.length !== arr(old).length) { recordChange(c, k, old, merged, source); c.profile[k] = merged; c.src[k] = source; applied.push(f.l); } continue; }
+    if (isEmpty(old)) { recordChange(c, k, old, v, source); c.profile[k] = v; c.src[k] = source; applied.push(f.l); continue; }
     if (same(old, v)) continue;
     if (c.pending.some(p => p.kind === 'field' && p.field === k && same(p.to, v))) continue;
     const p = { id: uid(6), kind: 'field', field: k, from: old, to: v, source, at: nowISO() }; c.pending.push(p); pend.push(p);

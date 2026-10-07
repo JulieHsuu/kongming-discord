@@ -3,6 +3,8 @@ fonts/
 state/
 test/out/
 test/tmpdata/
+test/consultant-data/
+test/live-image/
 .env
 .env.*
 !.env.example
@@ -12,3 +14,6 @@ test/tmpdata/
 *.pfx
 *.log
 *.zip
+
+backups/
+scripts/local-runtime.json

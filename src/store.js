@@ -24,9 +24,9 @@ export function saveCase(c) {
   c.interviews = (c.interviews || []).slice(0, 10); c.ingests = (c.ingests || []).slice(0, 20); c.outputs = (c.outputs || []).slice(0, 80);
   writeJson(caseFile(c.id), c); return c;
 }
-export function listCases(guildId) {
+export function listCases(guildId, includeRestricted = false) {
   return fs.readdirSync(dir('cases')).filter(f => f.endsWith('.json')).map(f => readJson(path.join(dir('cases'), f), null)).filter(c => c && c.id && (!guildId || !c.guildId || c.guildId === guildId))
-    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    .filter(c => includeRestricted || c.access?.mode !== 'restricted').sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 }
 export function createCase(name, guildId, profile) {
   const c = blankCase(name); c.guildId = guildId || null;
@@ -57,12 +57,19 @@ export function saveOutputFile(caseId, name, buffer) {
   const d = dir('files', key);
   const p = path.join(d, name);
   fs.writeFileSync(p, buffer);
+  writeJson(path.join(d, '_owner.json'), { caseId });
   return { key, name, path: p, size: buffer.length };
 }
 export function filePath(key, name) {
-  if (!/^[a-z0-9]{10,24}$/.test(key) || name.includes('/') || name.includes('..')) return null;
+  if (!/^[a-z0-9]{10,24}$/.test(key) || name.includes('/') || name.includes('\\') || name.includes(':') || name.includes('..')) return null;
   const p = path.join(cfg.dataDir, 'files', key, name);
   return fs.existsSync(p) ? p : null;
+}
+export function fileIsRestricted(key) {
+  if (!/^[a-z0-9]{10,24}$/.test(key)) return true;
+  const meta = readJson(path.join(cfg.dataDir, 'files', key, '_owner.json'), {});
+  if (meta.caseId) { const c = getCase(meta.caseId); return !c || c.access?.mode === 'restricted'; }
+  return listCases(null, true).some(c => c.access?.mode === 'restricted' && [...(c.versions || []), ...(c.outputs || []).flatMap(o => o.files || [])].some(f => f.key === key));
 }
 
 /* ---------- daily counters ---------- */

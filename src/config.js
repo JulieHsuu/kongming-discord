@@ -22,6 +22,7 @@ const int = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n
 const bool = (v, d) => v === undefined || v === '' ? d : /^(1|true|yes|on)$/i.test(v);
 
 export const cfg = {
+  attachmentMenu: bool(E.KM_ATTACHMENT_MENU, true),
   discordToken: E.DISCORD_TOKEN || '',
   guildIds: list(E.KM_GUILD_IDS),            // 只在這些伺服器工作（KM_REQUIRE_GUILD_LIST=true 時必填）
   watchChannels: list(E.KM_WATCH_CHANNELS),  // 主動觀察的頻道 ID；空白＝所有看得到的文字頻道
@@ -43,6 +44,10 @@ export const cfg = {
   anthropicKey: E.ANTHROPIC_API_KEY || '',
   openaiBase: (E.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, ''),
   openaiKey: E.OPENAI_API_KEY || '',
+  openaiSearchModel: E.KM_MODEL_SEARCH || '',
+  imageModel: E.KM_MODEL_IMAGE || '',
+  ocrMaxPages: int(E.KM_OCR_MAX_PAGES, 20),
+  searchContextSize: ['low', 'medium', 'high'].includes(E.KM_SEARCH_CONTEXT_SIZE) ? E.KM_SEARCH_CONTEXT_SIZE : 'medium',
   model: E.KM_MODEL || (/(openai)/i.test(E.KM_LLM_PROVIDER || '') ? 'gpt-4.1' : 'claude-sonnet-5-5'),
   modelHeavy: E.KM_MODEL_HEAVY || E.KM_MODEL || (/(openai)/i.test(E.KM_LLM_PROVIDER || '') ? 'gpt-4.1' : 'claude-opus-5-5'),
   modelFast: E.KM_MODEL_FAST || E.KM_MODEL || (/(openai)/i.test(E.KM_LLM_PROVIDER || '') ? 'gpt-4.1-mini' : 'claude-haiku-4-5-20251001'),

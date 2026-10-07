@@ -32,7 +32,7 @@ export function caseContext(c, o = {}) {
   const iv = c.interviews[0];
   if (iv && o.interview !== false) L.push(`【最近一次訪談（${iv.date || hhmm(iv.at)}）】${cut(iv.summary, 300)}\n需求：${arr(iv.needs).slice(0, 6).join('；')}\n痛點：${arr(iv.pain_points).slice(0, 6).join('；')}\n數據：${arr(iv.data_points).slice(0, 10).map(d => `${d.label} ${d.value}`).join('；')}`);
   if (c.analysis && o.analysis !== false) L.push(`【科專分析】${cut(c.analysis.summary, 240)}\n建議：${arr(c.analysis.recommendations).map(r => `${(KZ.byId[r.program_id] || {}).short || r.program_id}（題目：${r.project_idea}；${r.track}）`).join('；')}`);
-  if (c.research) L.push(`【企業研究（${c.research.at ? c.research.at.slice(0, 10) : ''}，來源見研究報告）】${cut(c.research.summary, 400)}\n${arr(c.research.facts).slice(0, 8).map(f => `- ${f.label}：${f.value}`).join('\n')}${arr(c.research.pain_hypotheses).length ? '\n可能痛點：' + arr(c.research.pain_hypotheses).slice(0, 5).join('；') : ''}`);
+  if (c.research) L.push(`【企業研究（${c.research.at ? c.research.at.slice(0, 10) : ''}，來源見研究報告）】${cut(c.research.summary, 400)}\n${arr(c.research.facts).slice(0, 8).map(f => `- ${f.label}：${f.value}${f.source ? '（來源：' + f.source + '）' : ''}`).join('\n')}${arr(c.research.pain_hypotheses).length ? '\n可能痛點：' + arr(c.research.pain_hypotheses).slice(0, 5).join('；') : ''}`);
   const sim = CTX.similar ? CTX.similar(c) : '';
   if (sim && o.similar !== false) L.push(`【團隊過去的相似案例（參考做法，不要照抄數字）】\n${sim}`);
   const kind = o.kind || (LLM.als.getStore() || {}).kind || 'router';
@@ -79,6 +79,7 @@ ${ev.length ? '\n【可能適用的政府科專（資格初篩，供訪談時切
   if (arr(d.gaps).length) B.push({ h: '待補充資訊' }, { table: { headers: ['資訊', '為什麼重要'], rows: arr(d.gaps).map(g => [g.item, g.why]) } });
   const tools = [...arr(d.tool_inputs), ...arr(d.bring)]; if (tools.length) B.push({ h: '顧問工具所需資料與要帶的東西' }, { ul: tools });
   if (d.kezhuan_angle) B.push({ h: '科專切入建議' }, { p: d.kezhuan_angle });
+  if (c.research && arr(c.research.sources).length) B.push({ h: '訪前企業研究來源', muted: true }, { p: `研究時間：${c.research.at}`, muted: true }, { ul: c.research.sources.map(s => `${s.title}：${s.url}`) });
   const doc = await buildDocx(d.title || `${c.name} 訪前準備`, B);
   return {
     summary: `訪綱 ${arr(d.sections).length} 段、${q} 題；待補充資訊 ${arr(d.gaps).length} 項。`,
@@ -92,7 +93,8 @@ async function ingest(c, p, ctl) {
   const atts = arr(p.atts), texts = atts.filter(a => a.kind === 'text' && a.text), imgs = atts.filter(a => a.kind === 'image').map(a => a.image).slice(0, 4);
   const pasted = (!atts.length && p.text && p.text.length > 40) ? p.text : '';
   if (!texts.length && !imgs.length && !pasted) throw new KmError('沒有收到要建檔的資料，請附檔案或貼上內容。');
-  const body = [...texts.map(a => `《${a.name}》\n${cut(a.text, 24000 / Math.max(1, texts.length))}`), pasted ? `《同事貼上的內容》\n${cut(pasted, 12000)}` : ''].filter(Boolean).join('\n\n');
+  const body = [...texts.map(a => `《${a.name}》\n${a.text}`), pasted ? `《同事貼上的內容》\n${pasted}` : ''].filter(Boolean).join('\n\n');
+  if (body.length > 24000) throw new KmError('來源全文已讀取，但超過單次建檔的 24,000 字上限；請分檔建檔，避免漏掉後半段。');
   const d = await LLM.json({ label: 'ingest', signal: ctl.signal, images: imgs, system: HDR(), messages: [{ role: 'user', content: `同事交給你下列${p.tool ? '既有顧問工具的產出結果' : '資料'}${imgs.length ? '（含圖片，例如名片、型錄、簡報截圖）' : ''}，請建檔到案件。
 
 【目前案件資料】
@@ -126,8 +128,9 @@ async function debrief(c, p, ctl) {
   if (p.notes) notes = p.notes + (notes ? '\n\n' + notes : '');
   else if (p.text && p.text.length > 60) notes = `《同事的訪談筆記》\n${p.text}` + (notes ? '\n\n' + notes : '');
   if (!notes.trim()) throw new KmError('請貼上訪談筆記或附上逐字稿（錄音請先用既有診斷工具轉成逐字稿）。');
+  if (notes.length > 36000) throw new KmError('完整逐字稿已保留，但超過單次訪談整理的 36,000 字上限；請分成多份整理，避免漏掉後半段。');
   const gaps = arr(c.prep && c.prep.gaps).map(g => g.item).join('；');
-  const d = await LLM.json({ label: 'debrief', signal: ctl.signal, system: HDR(), messages: [{ role: 'user', content: `這是顧問結束訪談後交給你的內容（筆記或逐字稿），請整理成訪談紀錄並更新案件。
+  const d = await LLM.json({ label: 'debrief', signal: ctl.signal, system: HDR(), messages: [{ role: 'user', content: `這是顧問交給你的筆記或逐字稿。先依內容判斷是否屬於目前案件的訪談；私人對話、課堂、論文討論等無關內容不可套用案件背景。若明顯無關，只回 {"case_relevant":false,"reason":"內容與案件不符，請確認附件；未建立紀錄或更新案件。"}。相關內容才整理成訪談紀錄並更新案件，JSON 加上 "case_relevant":true。
 
 【訪前列出的待補充資訊】${gaps || '無'}
 【目前案件資料】
@@ -139,6 +142,7 @@ ${cut(notes, 36000)}
 只回覆一個 JSON 物件：
 {"title":"〇〇訪談紀錄","date":"YYYY-MM-DD 或 null","attendees":["…"],"summary":"3–4 句摘要","highlights":["重點"],"needs":["客戶需求"],"pain_points":["痛點"],"data_points":[{"label":"…","value":"…"}],"commitments":[{"who":"顧問|客戶|孔明","what":"…","due":"YYYY-MM-DD 或 null"}],"answered_gaps":["訪前待補充、這次已取得的資訊"],"open_questions":["仍待確認的事"],"profile_updates":{},"next_steps":["建議下一步"],"tool_fields":[{"field":"既有顧問工具或評量表需要的欄位","value":"從訪談擷取的內容"}]}
 規則：只寫訪談內容有提到的事，數字照原文；逐字稿的口語要整理成書面句；${FIELD_RULES}；繁體中文。` }] });
+  if (d && d.case_relevant === false) throw new KmError(d.reason || '訪談內容與目前案件無關，未建立訪談紀錄或更新案件；請確認附件。');
   if (!d || !d.summary) throw new KmError('訪談紀錄格式不完整，請再試一次。');
   const src = `訪談紀錄 ${d.date || isoDay()}`;
   const r = applyProfile(c, d.profile_updates, src);

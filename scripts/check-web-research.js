@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { cfg, ROOT } from '../src/config.js';
+import { blankCase } from '../src/store.js';
+import { loadPrograms } from '../src/domain.js';
+import { runTask } from '../src/tasks.js';
+import '../src/tasks2.js';
+loadPrograms();
+const c = blankCase('大成長城企業股份有限公司');
+const r = await runTask('research', c, { focus: '公開官網與近期新聞，資料不足明確標示' }, { signal: AbortSignal.timeout(180000) });
+const out = path.join(ROOT, 'test', 'live-web-research'); fs.mkdirSync(out, { recursive: true });
+for (const f of r.files) fs.writeFileSync(path.join(out, f.name), f.buffer);
+fs.writeFileSync(path.join(out, 'research.json'), JSON.stringify(c.research, null, 2));
+console.log(JSON.stringify({ provider: cfg.llmProvider, web: c.research.web, sources: c.research.sources.length, facts: c.research.facts?.length, news: c.research.news?.length, files: r.files.map(f => f.name) }));

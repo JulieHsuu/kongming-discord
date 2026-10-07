@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import JSZip from 'jszip';
+import { generateIllustration } from '../src/consultant.js';
+import { buildDocx } from '../src/files/docs.js';
+import { appendImageDocx } from '../src/files/office.js';
+const out = path.resolve('test/live-image'); fs.mkdirSync(out, { recursive: true });
+const image = await generateIllustration('一位虛構的台灣企業高階主管穿西裝坐在明亮咖啡廳，手持咖啡杯，與顧問會談。專業自然，橫向文件用情境，人物不指涉真人。');
+const base = await buildDocx('訪談情境示意圖驗證', [{ p: '測試原有文字，加入圖片後仍需保留。' }]);
+const doc = await appendImageDocx(base, image, 'AI 生成情境示意圖，非企業董事長本人。');
+const zip = await JSZip.loadAsync(doc), xml = await zip.file('word/document.xml').async('string');
+const media = Object.keys(zip.files).filter(n => /^word\/media\/.+\.png$/.test(n));
+if (!media.length || !xml.includes('r:embed=') || !xml.includes('測試原有文字')) throw new Error('Word image verification failed');
+fs.writeFileSync(path.join(out, '主管咖啡會談.png'), image);
+fs.writeFileSync(path.join(out, '圖片驗證.docx'), doc);
+console.log(JSON.stringify({ generated: true, imageBytes: image.length, embeddedImages: media.length, wordBytes: doc.length, output: out }));

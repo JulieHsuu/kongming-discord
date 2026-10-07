@@ -8,6 +8,7 @@ import { arr, cut, isoDay, nowISO, uid, num, safeName, parseJsonLoose, KmError }
 import { FBY, KZ, NEEDS, applyProfile, profileText, missingFields } from './domain.js';
 import { TASKS, EXTRA, CTX, HDR, FIELD_RULES, caseContext, dataSources } from './tasks.js';
 import { buildDocx } from './files/docs.js';
+import { filterResearchSources } from './web-research.js';
 
 const fileOut = (name, buffer, desc) => ({ name, buffer, desc });
 const fn = (c, base, ext) => `${safeName(c.name)}_${base}.${ext}`;
@@ -57,7 +58,7 @@ EXTRA.research = async (c, p, ctl, ui) => {
   if (!name || name === '新案件') throw new KmError('請先告訴我企業名稱。');
   const web = LLM.canWebSearch();
   ui && ui.progress(web ? '上網查公司官網、新聞與同業…' : '整理已知資料…');
-  const r = await LLM.text({ label: 'research', tier: 'default', maxTokens: 8000, signal: ctl.signal, webSearch: web ? 8 : false, system: HDR(), messages: [{ role: 'user', content: `顧問要拜訪「${name}」，請做訪前企業研究。${web ? '請用網路搜尋查：公司官網（產品、客戶產業、據點、規模）、近兩年新聞（擴廠、得獎、合作、裁員、訂單、關稅影響）、政府計畫或補助紀錄、主要同業與產業趨勢、公開的聯絡窗口（官網聯絡信箱、公司總機、業務或公關窗口）。如果對象是政府機關、法人或公協會，改查它的業務職掌、組織、年度施政重點與預算、正在推的計畫、近期標案或委辦案（政府電子採購網 web.pcc.gov.tw）、對外合作方式與承辦單位。只採用查得到來源的資訊，查不到的不要猜。' : '目前無法上網，只能根據下方資料整理，並列出需要顧問自己查證的項目。'}
+  const r = await LLM.text({ label: 'research', tier: 'default', maxTokens: 8000, signal: ctl.signal, webSearch: web ? 8 : false, webQuery: name + ' 官方網站 公司產品 公開聯絡窗口 近期新聞 產業 同業 政府公告', system: HDR(), messages: [{ role: 'user', content: `顧問要拜訪「${name}」，請做訪前企業研究。${web ? '請用網路搜尋查：公司官網（產品、客戶產業、據點、規模）、近兩年新聞（擴廠、得獎、合作、裁員、訂單、關稅影響）、政府計畫或補助紀錄、主要同業與產業趨勢、公開的聯絡窗口（官網聯絡信箱、公司總機、業務或公關窗口）。如果對象是政府機關、法人或公協會，改查它的業務職掌、組織、年度施政重點與預算、正在推的計畫、近期標案或委辦案（政府電子採購網 web.pcc.gov.tw）、對外合作方式與承辦單位。只採用查得到來源的資訊，查不到的不要猜。' : '目前無法上網，只能根據下方資料整理，並列出需要顧問自己查證的項目。'}
 
 ${profileText(c)}
 ${p.focus ? `交辦重點：${p.focus}` : ''}
@@ -67,17 +68,19 @@ ${p.focus ? `交辦重點：${p.focus}` : ''}
 規則：${FIELD_RULES}；只放查得到的；繁體中文。` }] });
   const d = parseJsonLoose(r.text);
   if (!d || !d.summary) throw new KmError('研究結果格式不完整，請再交辦一次。');
-  const srcs = arr(r.sources).slice(0, 15);
+  const srcs = arr(r.sources).slice(0, 30);
+  if (web && cfg.llmProvider === 'openai') filterResearchSources(d, srcs);
+  if (r.searchTruncated) (d.verify ??= []).push('搜尋摘要被截斷，請補查來源；本次研究不保證完整。');
   c.research = { ...d, sources: srcs, at: nowISO(), web };
   const up = applyProfile(c, d.profile_updates, '企業研究（網路公開資訊）');
-  const B = [{ p: d.summary }];
-  if (arr(d.facts).length) B.push({ h: '企業基本資訊' }, { table: { headers: ['項目', '內容', '來源'], rows: arr(d.facts).map(f => [f.label, f.value, cut(f.source || '', 60)]) } });
-  if (arr(d.news).length) B.push({ h: '近期新聞' }, { table: { headers: ['時間', '標題', '對拜訪的意義'], rows: arr(d.news).map(n => [n.date || '', n.title, n.why]) } });
+  const B = [{ p: `查詢時間：${new Date().toLocaleString('zh-TW', { timeZone: cfg.timezone })}｜${web ? '公開網頁搜尋' : '僅整理已知資料'}`, muted: true }, { p: d.summary }];
+  if (arr(d.facts).length) B.push({ h: '企業基本資訊' }, { table: { headers: ['項目', '內容', '來源'], rows: arr(d.facts).map(f => [f.label, f.value, f.source || '']) } });
+  if (arr(d.news).length) B.push({ h: '近期新聞' }, { table: { headers: ['時間', '標題', '對拜訪的意義', '來源'], rows: arr(d.news).map(n => [n.date || '', n.title, n.why, n.source || '']) } });
   if (arr(d.industry).length) B.push({ h: '產業趨勢與政策' }, { ul: d.industry });
   if (arr(d.peers).length) B.push({ h: '同業動態' }, { table: { headers: ['同業', '動態'], rows: arr(d.peers).map(x => [x.name, x.note]) } });
   if (arr(d.pain_hypotheses).length) B.push({ h: '可能痛點（訪談時驗證）' }, { ul: d.pain_hypotheses });
   if (arr(d.talking_points).length) B.push({ h: '開場話題' }, { ul: d.talking_points });
-  if (arr(d.contacts).length) B.push({ h: '公開聯絡窗口' }, { table: { headers: ['窗口', '電話', '信箱', '來源'], rows: arr(d.contacts).map(x => [x.who, x.phone || '', x.email || '', cut(x.source || '', 50)]) } });
+  if (arr(d.contacts).length) B.push({ h: '公開聯絡窗口' }, { table: { headers: ['窗口', '電話', '信箱', '來源'], rows: arr(d.contacts).map(x => [x.who, x.phone || '', x.email || '', x.source || '']) } });
   if (arr(d.verify).length) B.push({ h: '待確認' }, { ul: d.verify });
   if (srcs.length) B.push({ h: '資料來源' }, { ul: srcs.map(s => `${s.title}：${s.url}`) });
   const doc = await buildDocx(`${name} 企業研究`, B);
